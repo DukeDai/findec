@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createChart, IChartApi, ISeriesApi, CandlestickData } from "lightweight-charts";
+import { createChart, IChartApi, ISeriesApi, CandlestickData, CandlestickSeries } from "lightweight-charts";
 
 interface ChartContainerProps {
   symbol: string;
@@ -26,7 +26,6 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
-    // Create chart
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { color: "#ffffff" },
@@ -49,8 +48,7 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
 
     chartRef.current = chart;
 
-    // Create candlestick series
-    const candlestickSeries = chart.addCandlestickSeries({
+    const candlestickSeries = chart.addSeries(CandlestickSeries, {
       upColor: "#22c55e",
       downColor: "#ef4444",
       borderUpColor: "#22c55e",
@@ -61,7 +59,6 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
 
     candlestickSeriesRef.current = candlestickSeries;
 
-    // Handle resize
     const handleResize = () => {
       if (chartContainerRef.current && chartRef.current) {
         chartRef.current.applyOptions({
@@ -79,7 +76,6 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
     };
   }, []);
 
-  // Fetch data when symbol changes
   useEffect(() => {
     const fetchData = async () => {
       if (!candlestickSeriesRef.current) return;

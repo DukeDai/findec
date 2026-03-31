@@ -28,6 +28,10 @@ interface YahooChartResponse {
 }
 
 interface YahooChartResult {
+  meta: {
+    shortName?: string;
+    longName?: string;
+  };
   timestamp: number[];
   indicators: {
     quote: Array<{
