@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Stock {
+  symbol    String   @id
+  name      String?
+  exchange  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  history   HistoricalData[]
+}
+
+model HistoricalData {
+  id          String   @id @default(uuid())
+  stockSymbol String
+  stock       Stock    @relation(fields: [stockSymbol], references: [symbol])
+  date        DateTime
+  open        Float
+  high        Float
+  low         Float
+  close       Float
+  volume      BigInt
+  createdAt   DateTime @default(now())
+
+  @@unique([stockSymbol, date])
+}
+
+model UserConfig {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
