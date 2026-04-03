@@ -70,10 +70,12 @@ prisma/
 ### 第一阶段（已完成）
 - ✅ Next.js 项目初始化
 - ✅ Prisma + SQLite 配置
-- ✅ Yahoo Finance API 集成
+- ✅ Yahoo Finance API 集成（带 mock 数据回退）
 - ✅ K 线图组件
 - ✅ Dashboard 页面
 - ✅ 技术指标计算服务
+- ✅ 技术指标叠加显示（MA, EMA, RSI, MACD）
+- ✅ 数据缓存优化（SQLite 存储）
 
 ### 未来阶段
 - [ ] 技术指标叠加显示
