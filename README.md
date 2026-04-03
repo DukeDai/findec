@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Findec - 美股量化分析平台
 
-## Getting Started
+个人美股量化分析工具，提供 K 线图查看、技术指标分析等功能。
 
-First, run the development server:
+## 技术栈
+
+- Next.js 16 (App Router)
+- TypeScript
+- Prisma + SQLite
+- Lightweight Charts v5
+- Yahoo Finance API
+- Tailwind CSS + shadcn/ui
+
+## 功能特性
+
+- 📊 K 线图查看（使用 Lightweight Charts）
+- 📈 技术指标计算（MA, EMA, RSI, MACD）
+- 🔍 股票搜索
+- 💹 快速报价
+- 💾 历史数据存储（SQLite）
+- 🎨 响应式界面（Tailwind + shadcn/ui）
+
+## 快速开始
 
 ```bash
+# 安装依赖
+npm install
+
+# 初始化数据库
+npx prisma db push
+npx prisma generate
+
+# 启动开发服务器
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+访问 http://localhost:3000 查看应用。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## API 端点
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `GET /api/quotes?symbol=AAPL` - 获取实时报价
+- `GET /api/history?symbol=AAPL&range=1y` - 获取历史数据
+- `GET /api/search?q=apple` - 搜索股票
+- `GET /api/indicators?symbol=AAPL&indicators=ma20,rsi` - 计算技术指标
 
-## Learn More
+## 项目结构
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+  app/
+    api/          # API Routes
+    chart/[symbol]/ # 动态图表页面
+    dashboard/     # Dashboard 页面
+  components/
+    chart/         # 图表组件
+    dashboard/     # Dashboard 组件
+    ui/            # shadcn/ui 组件
+  lib/
+    prisma.ts      # Prisma Client
+    yahoo-finance.ts # Yahoo Finance API
+    indicators.ts  # 技术指标计算
+  types/
+    stock.ts       # 类型定义
+prisma/
+  schema.prisma    # 数据模型
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 开发计划
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 第一阶段（已完成）
+- ✅ Next.js 项目初始化
+- ✅ Prisma + SQLite 配置
+- ✅ Yahoo Finance API 集成
+- ✅ K 线图组件
+- ✅ Dashboard 页面
+- ✅ 技术指标计算服务
 
-## Deploy on Vercel
+### 未来阶段
+- [ ] 技术指标叠加显示
+- [ ] 数据缓存优化
+- [ ] 因子选股/筛选
+- [ ] 回测系统
+- [ ] 实时监控/预警
+- [ ] 组合分析
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 许可证
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
