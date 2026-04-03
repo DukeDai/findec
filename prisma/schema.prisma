@@ -36,3 +36,110 @@ model UserConfig {
   value     String
   updatedAt DateTime @updatedAt
 }
+
+model FactorStrategy {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  rules       FactorRule[]
+  results     ScreeningResult[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model FactorRule {
+  id              String         @id @default(uuid())
+  strategy        FactorStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  strategyId      String
+  field           String
+  operator        String
+  value           Float
+  weight          Float          @default(1.0)
+  createdAt       DateTime       @default(now())
+}
+
+model ScreeningResult {
+  id          String        @id @default(uuid())
+  strategy    FactorStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  strategyId  String
+  symbol      String
+  score       Float
+  details     String?
+  screenedAt  DateTime      @default(now())
+}
+
+model BacktestPlan {
+  id            String          @id @default(uuid())
+  name          String
+  symbols       String
+  startDate     DateTime
+  endDate       DateTime
+  initialCapital Float
+  trades        BacktestTrade[]
+  totalReturn   Float?
+  sharpeRatio   Float?
+  maxDrawdown  Float?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model BacktestTrade {
+  id          String      @id @default(uuid())
+  plan        BacktestPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  planId      String
+  symbol      String
+  type        String
+  quantity    Float
+  price       Float
+  date        DateTime
+  createdAt   DateTime    @default(now())
+}
+
+model Alert {
+  id          String   @id @default(uuid())
+  symbol      String
+  condition   String
+  targetValue Float?
+  message     String?
+  isActive    Boolean  @default(true)
+  triggeredAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Portfolio {
+  id            String       @id @default(uuid())
+  name          String
+  description   String?
+  positions     Position[]
+  transactions  Transaction[]
+  totalValue    Float        @default(0)
+  totalCost     Float        @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Position {
+  id          String     @id @default(uuid())
+  portfolio   Portfolio  @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  portfolioId String
+  symbol      String
+  quantity    Float
+  avgCost     Float
+  currentPrice Float     @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Transaction {
+  id          String     @id @default(uuid())
+  portfolio   Portfolio  @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  portfolioId String
+  symbol      String
+  type        String
+  quantity    Float
+  price       Float
+  total       Float
+  date        DateTime
+  createdAt   DateTime   @default(now())
+}

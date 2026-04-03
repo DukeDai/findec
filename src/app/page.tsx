@@ -16,6 +16,12 @@ export default function Home() {
             >
               Dashboard
             </Link>
+            <Link
+              href="/analysis"
+              className="px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
+            >
+              量化分析
+            </Link>
           </nav>
         </div>
       </header>
