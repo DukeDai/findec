@@ -123,13 +123,16 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
 
     return () => {
       window.removeEventListener("resize", handleResize);
+      indicatorSeriesRef.current.clear();
       chart.remove();
+      chartRef.current = null;
+      candlestickSeriesRef.current = null;
     };
   }, []);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!candlestickSeriesRef.current) return;
+      if (!candlestickSeriesRef.current || !chartRef.current) return;
 
       setLoading(true);
       setError(null);
