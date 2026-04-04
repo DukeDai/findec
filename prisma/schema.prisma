@@ -105,6 +105,9 @@ model Alert {
   triggeredAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  type        String   @default("price")  // 'price' | 'indicator' | 'factor' | 'risk'
+  metric      String?  // specific metric name
+  broadcast   Boolean  @default(false)    // whether pushed via WebSocket
 }
 
 model Portfolio {
@@ -142,4 +145,86 @@ model Transaction {
   total       Float
   date        DateTime
   createdAt   DateTime   @default(now())
+}
+
+// Data source metadata - track where each data point came from
+model DataSourceMeta {
+  id              String   @id @default(uuid())
+  symbol          String
+  date            DateTime
+  source          String   // 'yahoo' | 'mock' | 'cache'
+  sourceTimestamp DateTime
+  createdAt       DateTime @default(now())
+
+  @@unique([symbol, date])
+  @@index([symbol])
+  @@index([date])
+}
+
+// Factor historical values - store daily factor calculations
+model FactorHistory {
+  id        String   @id @default(uuid())
+  factorId  String
+  symbol    String
+  date      DateTime
+  value     Float
+  rank      Float?
+  zscore    Float?
+  createdAt DateTime @default(now())
+
+  @@unique([factorId, symbol, date])
+  @@index([factorId])
+  @@index([symbol])
+  @@index([date])
+}
+
+// Portfolio-level backtest plan (extended from existing BacktestPlan)
+model PortfolioBacktestPlan {
+  id             String   @id @default(uuid())
+  name           String
+  symbols        String   // JSON array: ["AAPL", "MSFT"]
+  allocation     String   // JSON object: {"AAPL": 0.5, "MSFT": 0.5}
+  strategies     String   // JSON array of strategy configs
+  costModel      String   @default("{}") // JSON object: commission, slippage config
+  initialCapital Float
+  startDate      DateTime
+  endDate        DateTime
+  status         String   @default("pending") // 'pending' | 'running' | 'completed' | 'failed'
+
+  // Rebalancing settings
+  rebalance          String  @default("monthly") // 'daily' | 'weekly' | 'monthly' | 'none'
+  rebalanceThreshold Float?
+
+  // Portfolio-level metrics
+  portfolioReturn     Float?
+  portfolioSharpe     Float?
+  portfolioSortino    Float?
+  portfolioCalmar     Float?
+  portfolioMaxDrawdown Float?
+  portfolioVolatility Float?
+  portfolioVaR95     Float?
+
+  // Detailed results (JSON strings)
+  equityCurve   String?  // JSON array of {date, value}
+  riskMetrics   String?  // JSON object with risk breakdown
+  tradeLog      String?  // JSON array of all trades
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Risk alert log
+model RiskAlertLog {
+  id          String   @id @default(uuid())
+  portfolioId String
+  type        String   // 'drawdown' | 'concentration' | 'volatility' | 'correlation'
+  severity    String   // 'warning' | 'critical'
+  message     String
+  current     Float
+  threshold   Float
+  triggeredAt DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([portfolioId])
+  @@index([triggeredAt])
 }

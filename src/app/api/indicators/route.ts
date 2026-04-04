@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getHistoricalData, YahooFinanceError } from '@/lib/yahoo-finance'
-import { calculateIndicators } from '@/lib/indicators'
+import {
+  IndicatorCalculator,
+  IndicatorConfig,
+} from '@/lib/indicators/calculator'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,11 +16,10 @@ export async function GET(request: NextRequest) {
 
     const normalizedSymbol = symbol.toUpperCase()
     let data
-    
+
     try {
       data = await getHistoricalData(normalizedSymbol, '1y')
     } catch (error) {
-      // If Yahoo Finance fails, generate mock data
       console.warn('Yahoo Finance API failed, generating mock data:', error)
       data = generateMockHistoricalData(normalizedSymbol, '1y')
     }
@@ -27,36 +29,86 @@ export async function GET(request: NextRequest) {
     }
 
     const indicatorList = indicators.split(',')
-    const options: {
-      ma?: number[]
-      ema?: number[]
-      rsi?: number
-      macd?: { fast: number; slow: number; signal: number }
-    } = {}
+    const config: IndicatorConfig = {}
 
     for (const ind of indicatorList) {
-      if (ind.startsWith('ma')) {
-        const period = parseInt(ind.replace('ma', ''))
+      const trimmed = ind.trim().toLowerCase()
+
+      if (trimmed.startsWith('ma')) {
+        const period = parseInt(trimmed.replace('ma', ''))
         if (!isNaN(period)) {
-          options.ma = [...(options.ma || []), period]
+          config.ma = [...(config.ma || []), period]
         }
-      } else if (ind.startsWith('ema')) {
-        const period = parseInt(ind.replace('ema', ''))
+      } else if (trimmed.startsWith('ema')) {
+        const period = parseInt(trimmed.replace('ema', ''))
         if (!isNaN(period)) {
-          options.ema = [...(options.ema || []), period]
+          config.ema = [...(config.ema || []), period]
         }
-      } else if (ind === 'rsi') {
-        options.rsi = 14
-      } else if (ind === 'macd') {
-        options.macd = { fast: 12, slow: 26, signal: 9 }
+      } else if (trimmed === 'rsi') {
+        config.rsi = { period: 14 }
+      } else if (trimmed.startsWith('rsi')) {
+        const period = parseInt(trimmed.replace('rsi', ''))
+        if (!isNaN(period)) {
+          config.rsi = { period }
+        }
+      } else if (trimmed === 'macd') {
+        config.macd = { fast: 12, slow: 26, signal: 9 }
+      } else if (trimmed.startsWith('atr')) {
+        const period = parseInt(trimmed.replace('atr', ''))
+        config.atr = { period: !isNaN(period) ? period : 14 }
+      } else if (trimmed.startsWith('adx')) {
+        const period = parseInt(trimmed.replace('adx', ''))
+        config.adx = { period: !isNaN(period) ? period : 14 }
+      } else if (trimmed.startsWith('bollinger')) {
+        const params = trimmed.replace('bollinger', '').split(',')
+        const period = parseInt(params[0])
+        const stdDev = parseFloat(params[1])
+        config.bollinger = {
+          period: !isNaN(period) ? period : 20,
+          stdDev: !isNaN(stdDev) ? stdDev : 2,
+        }
+      } else if (trimmed.startsWith('bb')) {
+        const params = trimmed.replace('bb', '').split(',')
+        const period = parseInt(params[0])
+        const stdDev = parseFloat(params[1])
+        config.bollinger = {
+          period: !isNaN(period) ? period : 20,
+          stdDev: !isNaN(stdDev) ? stdDev : 2,
+        }
+      } else if (trimmed === 'stoch' || trimmed === 'stochastic') {
+        config.stochastic = { kPeriod: 14, dPeriod: 3, smooth: 3 }
+      } else if (trimmed.startsWith('stoch')) {
+        const params = trimmed.replace('stoch', '').split(',')
+        const kPeriod = parseInt(params[0])
+        const dPeriod = parseInt(params[1])
+        config.stochastic = {
+          kPeriod: !isNaN(kPeriod) ? kPeriod : 14,
+          dPeriod: !isNaN(dPeriod) ? dPeriod : 3,
+          smooth: 3,
+        }
+      } else if (trimmed === 'obv') {
+        config.obv = true
       }
     }
 
-    const result = calculateIndicators(data, options)
+    const calculator = new IndicatorCalculator()
+    const result = calculator.calculate(data, config)
+
+    const serializedResult = {
+      ma: Object.fromEntries(result.ma),
+      ema: Object.fromEntries(result.ema),
+      rsi: result.rsi,
+      macd: result.macd,
+      bollinger: result.bollinger,
+      atr: result.atr,
+      adx: result.adx,
+      stoch: result.stoch,
+      obv: result.obv,
+    }
 
     return NextResponse.json({
       symbol: normalizedSymbol,
-      indicators: result,
+      indicators: serializedResult,
     })
   } catch (error) {
     console.error('Indicators API error:', error)
@@ -67,15 +119,26 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Generate mock historical data when Yahoo Finance API fails
 function generateMockHistoricalData(symbol: string, range: string) {
-  const days = range === '1d' ? 1 : range === '5d' ? 5 : range === '1mo' ? 30 : 
-               range === '3mo' ? 90 : range === '6mo' ? 180 : range === '1y' ? 365 : 252
+  const days =
+    range === '1d'
+      ? 1
+      : range === '5d'
+        ? 5
+        : range === '1mo'
+          ? 30
+          : range === '3mo'
+            ? 90
+            : range === '6mo'
+              ? 180
+              : range === '1y'
+                ? 365
+                : 252
   const dataPoints = Math.min(days, 252)
   let basePrice = 150
   const mockData = []
   const now = new Date()
-  
+
   for (let i = dataPoints; i >= 0; i--) {
     const date = new Date(now)
     date.setDate(date.getDate() - i)
@@ -91,6 +154,6 @@ function generateMockHistoricalData(symbol: string, range: string) {
       volume: Math.floor(Math.random() * 10000000),
     })
   }
-  
+
   return mockData
 }

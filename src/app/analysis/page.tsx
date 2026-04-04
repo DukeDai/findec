@@ -3,17 +3,19 @@
 import { useState } from 'react'
 import { FactorScreener } from '@/components/analysis/FactorScreener'
 import { BacktestRunner } from '@/components/analysis/BacktestRunner'
+import { PortfolioBacktestRunner } from '@/components/analysis/PortfolioBacktestRunner'
 import { AlertManager } from '@/components/analysis/AlertManager'
 import { PortfolioDashboard } from '@/components/analysis/PortfolioDashboard'
 
-type Tab = 'screener' | 'backtest' | 'alerts' | 'portfolio'
+type Tab = 'screener' | 'backtest' | 'portfolio-backtest' | 'alerts' | 'portfolio'
 
 export default function AnalysisPage() {
   const [activeTab, setActiveTab] = useState<Tab>('screener')
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'screener', label: '因子选股' },
-    { id: 'backtest', label: '回测系统' },
+    { id: 'backtest', label: '单股回测' },
+    { id: 'portfolio-backtest', label: '组合回测' },
     { id: 'alerts', label: '实时监控' },
     { id: 'portfolio', label: '组合分析' },
   ]
@@ -57,11 +59,21 @@ export default function AnalysisPage() {
 
           {activeTab === 'backtest' && (
             <div>
-              <h2 className="text-lg font-semibold mb-4">回测系统</h2>
+              <h2 className="text-lg font-semibold mb-4">单股回测</h2>
               <p className="text-sm text-muted-foreground mb-4">
-                使用历史数据回测交易策略，评估策略绩效
+                使用历史数据回测单个股票的策略，评估策略绩效
               </p>
               <BacktestRunner />
+            </div>
+          )}
+
+          {activeTab === 'portfolio-backtest' && (
+            <div>
+              <h2 className="text-lg font-semibold mb-4">组合回测</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                使用历史数据回测多股票组合策略，支持资产配置和再平衡
+              </p>
+              <PortfolioBacktestRunner />
             </div>
           )}
 
