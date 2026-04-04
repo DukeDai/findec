@@ -147,15 +147,52 @@ export function PortfolioDashboard() {
     }
   }, [selectedId])
 
+  const createDemoPortfolio = async () => {
+    try {
+      const res = await fetch('/api/portfolios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: '示例投资组合',
+          description: '包含主要科技股的示例组合',
+        }),
+      })
+      const portfolio = await res.json()
+      
+      const demoPositions = [
+        { symbol: 'AAPL', quantity: 100, avgCost: 175 },
+        { symbol: 'MSFT', quantity: 50, avgCost: 380 },
+        { symbol: 'GOOGL', quantity: 30, avgCost: 140 },
+        { symbol: 'AMZN', quantity: 40, avgCost: 180 },
+      ]
+      
+      for (const pos of demoPositions) {
+        await fetch('/api/portfolios/' + portfolio.id + '/positions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(pos),
+        })
+      }
+      
+      await loadPortfolios()
+      setSelectedId(portfolio.id)
+    } catch (error) {
+      console.error('Failed to create demo portfolio:', error)
+    }
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Button onClick={() => setShowPortfolioForm(true)}>新建组合</Button>
         <Button variant="outline" onClick={() => setShowPositionForm(true)} disabled={!selectedId}>
           添加持仓
         </Button>
         <Button variant="outline" onClick={() => selectedId && loadMetrics(selectedId)} disabled={!selectedId || loading}>
           {loading ? '刷新中...' : '刷新'}
+        </Button>
+        <Button variant="secondary" onClick={createDemoPortfolio}>
+          创建示例组合
         </Button>
       </div>
 

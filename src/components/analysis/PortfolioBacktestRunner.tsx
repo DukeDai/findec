@@ -84,6 +84,29 @@ const STRATEGIES = [
   { id: 'trend_follow', name: '趋势跟踪', description: '跟随市场趋势方向交易' },
 ]
 
+const PRESET_PORTFOLIOS = [
+  {
+    id: 'tech_giant',
+    name: '科技巨头',
+    description: '苹果、微软、谷歌、亚马逊、META',
+    symbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META'],
+  },
+  {
+    id: 'diversified',
+    name: '分散组合',
+    description: '科技、金融、消费、医疗',
+    symbols: ['AAPL', 'JPM', 'JNJ', 'PG', 'XOM'],
+  },
+  {
+    id: 'growth',
+    name: '成长型',
+    description: '特斯拉、英伟达、超微半导体、云软件',
+    symbols: ['TSLA', 'NVDA', 'AMD', 'CRM', 'SNOW'],
+  },
+]
+
+const DEFAULT_PERIOD = { start: '2024-01-01', end: '2024-12-31' }
+
 export function PortfolioBacktestRunner() {
   const [plans, setPlans] = useState<BacktestPlan[]>([])
   const [selectedPlan, setSelectedPlan] = useState<BacktestPlan | null>(null)
@@ -242,15 +265,42 @@ export function PortfolioBacktestRunner() {
   }, [selectedPlan])
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-2">
-        <Button variant="outline" onClick={loadPlans}>
-          刷新列表
-        </Button>
-        <Button onClick={() => setShowCreateForm(true)}>
-          新建组合回测
-        </Button>
+    <div className="space-y-6">
+      <div className="space-y-3">
+        <p className="text-sm font-medium">快速回测</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {PRESET_PORTFOLIOS.map((portfolio) => (
+            <button
+              key={portfolio.id}
+              onClick={() => {
+                setFormData({
+                  ...formData,
+                  name: portfolio.name,
+                  symbols: portfolio.symbols.join(','),
+                })
+                setShowCreateForm(true)
+              }}
+              className="p-4 rounded-lg border text-left hover:border-primary/50 transition-colors"
+            >
+              <div className="font-medium mb-1">{portfolio.name}</div>
+              <div className="text-sm text-muted-foreground">{portfolio.description}</div>
+              <div className="text-xs text-muted-foreground mt-2">
+                {portfolio.symbols.join(', ')}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
+
+      <div className="border-t pt-6">
+        <div className="flex gap-2 mb-4">
+          <Button variant="outline" onClick={loadPlans}>
+            刷新列表
+          </Button>
+          <Button onClick={() => setShowCreateForm(true)}>
+            新建组合回测
+          </Button>
+        </div>
 
       {showCreateForm && (
         <Card>
@@ -494,6 +544,7 @@ export function PortfolioBacktestRunner() {
           </Card>
         </div>
       )}
+      </div>
     </div>
   )
 }

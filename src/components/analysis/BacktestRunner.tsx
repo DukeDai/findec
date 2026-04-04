@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Play, TrendingUp, Activity, Zap } from 'lucide-react'
 
 interface BacktestPlan {
   id: string
@@ -29,6 +30,16 @@ interface EquityPoint {
   value: number
 }
 
+const QUICK_STRATEGIES: { id: string; name: string; params: Record<string, number> }[] = [
+  { id: 'ma_crossover', name: 'MA均线交叉', params: { shortWindow: 20, longWindow: 50 } },
+  { id: 'rsi', name: 'RSI超买超卖', params: { rsiPeriod: 14, rsiOverbought: 70, rsiOversold: 30 } },
+  { id: 'macd', name: 'MACD交叉', params: { macdFast: 12, macdSlow: 26, macdSignal: 9 } },
+  { id: 'bollinger', name: '布林带', params: { bollingerPeriod: 20, bollingerStdDev: 2 } },
+]
+
+const DEFAULT_SYMBOL = 'AAPL'
+const DEFAULT_PERIOD = { start: '2024-01-01', end: '2024-12-31' }
+
 const STRATEGIES = [
   { id: 'ma_crossover', name: 'MA均线交叉', description: '短期均线上穿/下穿长期均线' },
   { id: 'dual_ma', name: '双均线策略', description: '基于两条均线的趋势跟踪' },
@@ -52,8 +63,8 @@ export function BacktestRunner() {
   const [formData, setFormData] = useState({
     name: '',
     symbols: 'AAPL,MSFT,GOOGL',
-    startDate: '2024-01-01',
-    endDate: '2024-12-31',
+    startDate: DEFAULT_PERIOD.start,
+    endDate: DEFAULT_PERIOD.end,
     initialCapital: '100000',
   })
 
@@ -183,11 +194,73 @@ export function BacktestRunner() {
     }
   }
 
+  const quickBacktest = async (strategyId: string, params: Record<string, number>) => {
+    setRunning(true)
+    setSelectedPlan(null)
+    setTrades([])
+    setEquityCurve([])
+    try {
+      const res = await fetch('/api/backtests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `${strategyId} - ${DEFAULT_SYMBOL}`,
+          symbols: [DEFAULT_SYMBOL],
+          startDate: DEFAULT_PERIOD.start,
+          endDate: DEFAULT_PERIOD.end,
+          initialCapital: 100000,
+        }),
+      })
+      const plan = await res.json()
+      
+      const executeRes = await fetch(`/api/backtests/${plan.id}/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          strategy: strategyId,
+          parameters: params,
+        }),
+      })
+      const data = await executeRes.json()
+      setSelectedPlan(data)
+      setTrades(data.trades || [])
+      setEquityCurve(data.equityCurve || [])
+    } catch (error) {
+      console.error('Failed to run quick backtest:', error)
+    } finally {
+      setRunning(false)
+    }
+  }
+
   const selectedStrategyInfo = STRATEGIES.find(s => s.id === strategyConfig.strategy)
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-2">
+    <div className="space-y-6">
+      <div className="space-y-3">
+        <p className="text-sm font-medium">快速回测</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {QUICK_STRATEGIES.map((qs) => (
+            <button
+              key={qs.id}
+              onClick={() => quickBacktest(qs.id, qs.params)}
+              disabled={running}
+              className="p-3 rounded-lg border text-left hover:border-primary/50 transition-colors disabled:opacity-50"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                {qs.id === 'ma_crossover' && <TrendingUp className="w-4 h-4 text-blue-500" />}
+                {qs.id === 'rsi' && <Activity className="w-4 h-4 text-green-500" />}
+                {qs.id === 'macd' && <Zap className="w-4 h-4 text-purple-500" />}
+                {qs.id === 'bollinger' && <Play className="w-4 h-4 text-orange-500" />}
+                <span className="font-medium text-sm">{qs.name}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">{DEFAULT_SYMBOL} 2024年</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t pt-6">
+        <div className="flex gap-2">
         <Button variant="outline" onClick={loadPlans}>
           加载回测
         </Button>
@@ -471,6 +544,7 @@ export function BacktestRunner() {
           </table>
         </div>
       )}
+      </div>
     </div>
   )
 }

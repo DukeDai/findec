@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
+import { io, Socket } from 'socket.io-client'
 
 interface Alert {
   id: string
@@ -31,6 +32,10 @@ export function AlertManager() {
     targetValue: '',
     message: '',
   })
+
+  const socketRef = useRef<Socket | null>(null)
+  const [wsConnected, setWsConnected] = useState(false)
+  const [latestAlert, setLatestAlert] = useState<Alert | null>(null)
 
   const loadAlerts = async () => {
     try {
@@ -114,11 +119,79 @@ export function AlertManager() {
     loadAlerts()
   }, [])
 
+  useEffect(() => {
+    const socket = io(`${window.location.protocol}//${window.location.host}:3001`)
+
+    socket.on('connect', () => {
+      console.log('Socket.io connected')
+      setWsConnected(true)
+      socket.emit('subscribe', { channel: 'alerts' })
+    })
+
+    socket.on('alert-triggered', (data: Alert) => {
+      setLatestAlert(data)
+      playNotificationSound()
+      setAlerts(prev => prev.map(a =>
+        a.id === data.id ? { ...a, triggeredAt: data.triggeredAt, isActive: false } : a
+      ))
+    })
+
+    socket.on('disconnect', () => {
+      console.log('Socket.io disconnected')
+      setWsConnected(false)
+    })
+
+    socketRef.current = socket
+
+    return () => {
+      socket.disconnect()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (latestAlert) {
+      const timeout = setTimeout(() => setLatestAlert(null), 10000)
+      return () => clearTimeout(timeout)
+    }
+  }, [latestAlert])
+
+  const playNotificationSound = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      oscillator.frequency.value = 800
+      gainNode.gain.value = 0.1
+      oscillator.start()
+      setTimeout(() => oscillator.stop(), 200)
+    } catch (e) {
+    }
+  }
+
   const selectedCondition = CONDITIONS.find(c => c.id === formData.condition)
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
+      {latestAlert && (
+        <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom">
+          <div className="bg-red-500 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-4">
+            <div className="flex-1">
+              <p className="font-bold">{latestAlert.symbol} 预警触发</p>
+              <p className="text-sm opacity-90">{latestAlert.message || `${latestAlert.condition} ${latestAlert.targetValue}`}</p>
+            </div>
+            <button
+              onClick={() => setLatestAlert(null)}
+              className="text-white/80 hover:text-white"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-2 items-center">
         <Button onClick={() => setShowForm(true)} disabled={loading}>
           新建预警
         </Button>
@@ -128,6 +201,9 @@ export function AlertManager() {
         <Button variant="outline" onClick={loadAlerts}>
           刷新
         </Button>
+        <div className={`text-xs px-2 py-1 rounded ${wsConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+          {wsConnected ? '实时连接' : '离线'}
+        </div>
       </div>
 
       {showForm && (
