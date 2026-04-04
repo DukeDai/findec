@@ -1,10 +1,10 @@
-# AGENTS.md - Findec 美股量化分析平台
+# AGENTS.md - FinDec 美股量化分析平台
 
 This document provides guidance for AI coding agents working in this repository.
 
 ## Project Overview
 
-Findec is a US stock quantitative analysis platform built with Next.js 16, TypeScript, and Prisma. It provides K-line charts, technical indicators, factor screening, backtesting, real-time monitoring, and portfolio analysis.
+FinDec is a US stock quantitative analysis platform built with Next.js 16, TypeScript, and Prisma. It provides K-line charts, technical indicators, factor screening, backtesting, real-time monitoring, and portfolio analysis.
 
 **Learning Tool**: Platform designed for learning quantitative trading concepts with educational content.
 
