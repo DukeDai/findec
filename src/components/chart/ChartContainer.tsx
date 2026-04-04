@@ -11,6 +11,7 @@ import {
   LineData,
 } from "lightweight-charts";
 import { SMA, EMA, RSI, MACD } from "technicalindicators";
+import { ChartToolbar, type IndicatorState } from "./ChartToolbar";
 
 interface ChartContainerProps {
   symbol: string;
@@ -25,19 +26,7 @@ interface HistoryDataPoint {
   volume: number;
 }
 
-interface IndicatorState {
-  ma5: boolean;
-  ma10: boolean;
-  ma20: boolean;
-  ma60: boolean;
-  ema5: boolean;
-  ema10: boolean;
-  ema20: boolean;
-  rsi: boolean;
-  macd: boolean;
-}
-
-const INDICATOR_COLORS = {
+const INDICATOR_COLORS: Record<string, string> = {
   ma5: "#3b82f6",
   ma10: "#8b5cf6",
   ma20: "#f97316",
@@ -373,91 +362,7 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
 
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="flex flex-wrap gap-2 p-3 border-b border-zinc-200 bg-zinc-50">
-        <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-700 cursor-pointer hover:text-zinc-900">
-          <input
-            type="checkbox"
-            checked={indicators.ma5}
-            onChange={() => toggleIndicator("ma5")}
-            className="w-3.5 h-3.5 rounded border-zinc-300 text-blue-500 focus:ring-blue-500"
-          />
-          <span style={{ color: INDICATOR_COLORS.ma5 }}>MA5</span>
-        </label>
-        <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-700 cursor-pointer hover:text-zinc-900">
-          <input
-            type="checkbox"
-            checked={indicators.ma10}
-            onChange={() => toggleIndicator("ma10")}
-            className="w-3.5 h-3.5 rounded border-zinc-300 text-violet-500 focus:ring-violet-500"
-          />
-          <span style={{ color: INDICATOR_COLORS.ma10 }}>MA10</span>
-        </label>
-        <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-700 cursor-pointer hover:text-zinc-900">
-          <input
-            type="checkbox"
-            checked={indicators.ma20}
-            onChange={() => toggleIndicator("ma20")}
-            className="w-3.5 h-3.5 rounded border-zinc-300 text-orange-500 focus:ring-orange-500"
-          />
-          <span style={{ color: INDICATOR_COLORS.ma20 }}>MA20</span>
-        </label>
-        <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-700 cursor-pointer hover:text-zinc-900">
-          <input
-            type="checkbox"
-            checked={indicators.ma60}
-            onChange={() => toggleIndicator("ma60")}
-            className="w-3.5 h-3.5 rounded border-zinc-300 text-cyan-500 focus:ring-cyan-500"
-          />
-          <span style={{ color: INDICATOR_COLORS.ma60 }}>MA60</span>
-        </label>
-        <div className="w-px h-4 bg-zinc-300 mx-1" />
-        <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-700 cursor-pointer hover:text-zinc-900">
-          <input
-            type="checkbox"
-            checked={indicators.ema5}
-            onChange={() => toggleIndicator("ema5")}
-            className="w-3.5 h-3.5 rounded border-zinc-300 text-green-500 focus:ring-green-500"
-          />
-          <span style={{ color: INDICATOR_COLORS.ema5 }}>EMA5</span>
-        </label>
-        <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-700 cursor-pointer hover:text-zinc-900">
-          <input
-            type="checkbox"
-            checked={indicators.ema10}
-            onChange={() => toggleIndicator("ema10")}
-            className="w-3.5 h-3.5 rounded border-zinc-300 text-yellow-500 focus:ring-yellow-500"
-          />
-          <span style={{ color: INDICATOR_COLORS.ema10 }}>EMA10</span>
-        </label>
-        <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-700 cursor-pointer hover:text-zinc-900">
-          <input
-            type="checkbox"
-            checked={indicators.ema20}
-            onChange={() => toggleIndicator("ema20")}
-            className="w-3.5 h-3.5 rounded border-zinc-300 text-pink-500 focus:ring-pink-500"
-          />
-          <span style={{ color: INDICATOR_COLORS.ema20 }}>EMA20</span>
-        </label>
-        <div className="w-px h-4 bg-zinc-300 mx-1" />
-        <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-700 cursor-pointer hover:text-zinc-900">
-          <input
-            type="checkbox"
-            checked={indicators.rsi}
-            onChange={() => toggleIndicator("rsi")}
-            className="w-3.5 h-3.5 rounded border-zinc-300 text-indigo-500 focus:ring-indigo-500"
-          />
-          <span style={{ color: INDICATOR_COLORS.rsi }}>RSI</span>
-        </label>
-        <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-700 cursor-pointer hover:text-zinc-900">
-          <input
-            type="checkbox"
-            checked={indicators.macd}
-            onChange={() => toggleIndicator("macd")}
-            className="w-3.5 h-3.5 rounded border-zinc-300 text-teal-500 focus:ring-teal-500"
-          />
-          <span style={{ color: INDICATOR_COLORS.macd }}>MACD</span>
-        </label>
-      </div>
+      <ChartToolbar indicators={indicators} onToggle={toggleIndicator} />
       <div className="w-full h-full relative flex-1 min-h-[400px]">
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">

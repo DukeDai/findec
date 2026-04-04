@@ -462,4 +462,36 @@ export class DataSource {
   }
 }
 
-export const defaultDataSource = new DataSource();
+export function generateMockHistoricalData(symbol: string, range: string): HistoricalPrice[] {
+  const days =
+    range === '1d' ? 1 :
+    range === '5d' ? 5 :
+    range === '1mo' ? 30 :
+    range === '3mo' ? 90 :
+    range === '6mo' ? 180 :
+    range === '1y' ? 365 : 252
+  const dataPoints = Math.min(days, 252)
+  let basePrice = 150
+  const mockData: HistoricalPrice[] = []
+  const now = new Date()
+
+  for (let i = dataPoints; i >= 0; i--) {
+    const date = new Date(now)
+    date.setDate(date.getDate() - i)
+    date.setHours(0, 0, 0, 0)
+    basePrice = basePrice * (1 + (Math.random() - 0.48) * 0.02)
+
+    mockData.push({
+      date,
+      open: basePrice * (1 + (Math.random() - 0.5) * 0.01),
+      high: basePrice * (1 + Math.random() * 0.02),
+      low: basePrice * (1 - Math.random() * 0.02),
+      close: basePrice,
+      volume: Math.floor(Math.random() * 10000000),
+    })
+  }
+
+  return mockData
+}
+
+export const defaultDataSource = new DataSource()
