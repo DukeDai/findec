@@ -13,7 +13,6 @@ interface NavItem {
 
 const mainNav: NavItem[] = [
   { label: 'K线图', href: '/', description: '查看股票K线' },
-  { label: 'Dashboard', href: '/dashboard', description: '快速查看股票' },
   { label: '量化分析', href: '/analysis', description: '因子选股、回测、监控' },
 ]
 
