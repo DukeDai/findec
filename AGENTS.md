@@ -6,14 +6,16 @@ This document provides guidance for AI coding agents working in this repository.
 
 Findec is a US stock quantitative analysis platform built with Next.js 16, TypeScript, and Prisma. It provides K-line charts, technical indicators, factor screening, backtesting, real-time monitoring, and portfolio analysis.
 
+**Learning Tool**: Platform designed for learning quantitative trading concepts with educational content.
+
 ## Build/Lint/Test Commands
 
 ```bash
 # Development
 npm run dev              # Start dev server on http://localhost:3000
 
-# Build
-npm run build            # Production build (includes TypeScript type checking)
+# Build (includes TypeScript type checking)
+npm run build
 
 # Lint
 npm run lint             # Run ESLint
@@ -21,12 +23,13 @@ npm run lint             # Run ESLint
 # Database
 npx prisma db push       # Push schema changes to database
 npx prisma generate      # Generate Prisma client
+npx prisma validate      # Validate schema
 
-# Type checking (part of build)
-npx tsc --noEmit         # Run TypeScript type checking only
+# Type checking only
+npx tsc --noEmit
 ```
 
-**Note**: No test framework is currently configured. Tests should be added in the future.
+**Note**: No test framework is configured. Tests should be added when needed.
 
 ## Tech Stack
 
@@ -36,7 +39,7 @@ npx tsc --noEmit         # Run TypeScript type checking only
 - **Styling**: Tailwind CSS v4 + shadcn/ui
 - **Charts**: Lightweight Charts v5
 - **Technical Analysis**: technicalindicators library
-- **Real-time**: Socket.io for WebSocket
+- **Real-time**: Socket.io for WebSocket (port 3001)
 
 ## Project Structure
 
@@ -44,72 +47,94 @@ npx tsc --noEmit         # Run TypeScript type checking only
 src/
 ├── app/                    # Next.js App Router
 │   ├── api/               # API Routes (route.ts files)
-│   │   ├── quotes/        # Real-time quotes
+│   │   ├── alerts/        # Price alerts
+│   │   ├── backtests/    # Backtesting (single + portfolio)
+│   │   ├── factors/       # Factor screening
 │   │   ├── history/       # Historical data
 │   │   ├── indicators/    # Technical indicators
-│   │   ├── factors/       # Factor screening
-│   │   ├── backtests/     # Backtesting engine
-│   │   ├── alerts/        # Price alerts
-│   │   └── portfolios/    # Portfolio management
-│   ├── analysis/          # Quantitative analysis page
-│   ├── chart/[symbol]/    # Dynamic chart pages
-│   └── dashboard/         # Dashboard page
+│   │   ├── portfolios/    # Portfolio management
+│   │   ├── quotes/       # Real-time quotes
+│   │   └── search/       # Stock search
+│   ├── analysis/         # Quantitative analysis page (tabbed interface)
+│   └── dashboard/        # Portfolio overview page
 ├── components/
-│   ├── chart/             # Chart components
-│   ├── analysis/          # Analysis UI components
-│   ├── dashboard/         # Dashboard components
-│   └── ui/                # shadcn/ui components
-├── lib/
-│   ├── prisma.ts          # Prisma client singleton
-│   ├── yahoo-finance.ts   # Yahoo Finance API
-│   ├── indicators.ts      # Technical indicator calculations
-│   ├── backtest-engine.ts # Backtesting engine
-│   ├── portfolio-metrics.ts # Portfolio analysis
-│   ├── alert-monitor.ts   # Alert monitoring
-│   └── websocket-server.ts # WebSocket server
-└── types/                 # TypeScript type definitions
+│   ├── analysis/         # Analysis UI components (FactorScreener, BacktestRunner, etc.)
+│   ├── chart/            # Chart components (ChartContainer, IndicatorOverlay)
+│   ├── dashboard/        # Dashboard components (QuickQuote, StockList, RiskPanel)
+│   ├── layout/           # Layout components (Navigation, PageHeader)
+│   └── ui/               # shadcn/ui components
+└── lib/
+    ├── backtest/         # Backtest engine modules
+    │   ├── cost-model.ts      # Trading cost model
+    │   ├── engine.ts         # Portfolio backtest engine
+    │   ├── position-manager.ts # Position management
+    │   └── risk-metrics.ts   # Risk metrics calculator
+    ├── data/              # Data layer modules
+    │   ├── cache-manager.ts  # Cache manager
+    │   ├── data-source.ts    # DataSource abstraction
+    │   └── rate-limiter.ts   # API rate limiter
+    ├── factors/           # Factor system modules
+    │   ├── factor-library.ts # Factor definitions
+    │   ├── factor-metrics.ts # Factor effectiveness analysis
+    │   └── screening-engine.ts # Screening execution
+    ├── indicators/        # Indicator modules
+    │   ├── calculator.ts      # Extended indicator calculator
+    │   └── signal-decorator.ts # Signal annotation
+    ├── portfolio/         # Portfolio modules
+    │   ├── allocation.ts     # Allocation optimizer
+    │   └── risk-monitor.ts   # Risk monitoring
+    ├── realtime/           # Real-time modules
+    │   └── alert-engine.ts   # Alert engine
+    ├── prisma.ts          # Prisma client singleton
+    ├── utils.ts           # Utility functions (cn)
+    ├── yahoo-finance.ts   # Yahoo Finance API
+    └── websocket-server.ts  # WebSocket server
 
 prisma/
-└── schema.prisma          # Database schema (12 models)
+└── schema.prisma          # Database schema
 ```
 
 ## Code Style Guidelines
 
-### Imports
+### Imports (order matters)
 
 ```typescript
-// 1. External packages (alphabetical)
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+// 1. React/Next.js imports
+import { useState, useEffect } from 'react'
+import NextRequest, { NextResponse } from 'next/server'
 
-// 2. Internal modules (use @/* path alias)
-import { calculateIndicators } from '@/lib/indicators'
+// 2. External packages (alphabetical)
 import { Button } from '@/components/ui/button'
+import { io } from 'socket.io-client'
+
+// 3. Internal modules (use @/* path alias)
+import { prisma } from '@/lib/prisma'
+import { cn } from '@/lib/utils'
 ```
 
 ### TypeScript
 
-- **Strict mode**: Enabled. All code must pass strict type checking.
-- **Path alias**: Use `@/*` for `./src/*` (e.g., `@/lib/prisma`, `@/components/ui/button`)
-- **Type definitions**: Define interfaces at the top of files or in `src/types/`
+- **Strict mode**: Enabled. All code must pass TypeScript strict checking
+- **Path alias**: Use `@/*` for `./src/*` (e.g., `@/lib/prisma`)
 - **Avoid `any`**: Use proper types or `unknown` with type guards
+- **Interface over type**: Prefer `interface` for object shapes
 
 ```typescript
 // Good
-interface ChartContainerProps {
-  symbol: string
+interface BacktestResult {
+  id: string
+  totalReturn: number
+  sharpeRatio: number
 }
 
-export function ChartContainer({ symbol }: ChartContainerProps) { ... }
-
 // Avoid
-export function ChartContainer(props: any) { ... }
+const result: any = fetchData()
 ```
 
 ### React Components
 
-- **Server Components**: Default for all components in `app/` directory
-- **Client Components**: Add `"use client"` directive at the top when using hooks
+- **Server Components**: Default for pages in `app/` directory
+- **Client Components**: Add `"use client"` directive at top when using hooks
 
 ```typescript
 // Server Component (default)
@@ -122,14 +147,12 @@ export default function Page() {
 import { useState } from 'react'
 
 export function InteractiveComponent() {
-  const [state, setState] = useState(null)
+  const [value, setValue] = useState(0)
   return <div>...</div>
 }
 ```
 
 ### API Routes
-
-All API routes follow this pattern:
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
@@ -138,39 +161,28 @@ import { prisma } from '@/lib/prisma'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const symbol = searchParams.get('symbol')
+    const id = searchParams.get('id')
 
-    if (!symbol) {
-      return NextResponse.json(
-        { error: 'Symbol parameter is required' },
-        { status: 400 }
-      )
+    if (!id) {
+      return NextResponse.json({ error: 'ID required' }, { status: 400 })
     }
 
-    // Business logic here
-    const data = await prisma.stock.findUnique({ where: { symbol } })
-
+    const data = await prisma.model.findUnique({ where: { id } })
     return NextResponse.json(data)
   } catch (error) {
-    console.error('API error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch data' },
-      { status: 500 }
-    )
+    console.error('GET error:', error)
+    return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    // Create/update logic
+    const result = await prisma.model.create({ data: body })
     return NextResponse.json(result, { status: 201 })
   } catch (error) {
-    console.error('API error:', error)
-    return NextResponse.json(
-      { error: 'Failed to create resource' },
-      { status: 500 }
-    )
+    console.error('POST error:', error)
+    return NextResponse.json({ error: 'Failed to create' }, { status: 500 })
   }
 }
 ```
@@ -180,26 +192,13 @@ export async function POST(request: NextRequest) {
 - Always wrap API route logic in try-catch
 - Return appropriate HTTP status codes (400, 404, 500)
 - Log errors with `console.error()`
-- Provide meaningful error messages in Chinese for user-facing errors
-
-### Database (Prisma)
-
-```typescript
-// Singleton pattern for Prisma client
-import { prisma } from '@/lib/prisma'
-
-// CRUD operations
-const stock = await prisma.stock.findUnique({ where: { symbol } })
-const stocks = await prisma.stock.findMany()
-const newStock = await prisma.stock.create({ data: { symbol, name } })
-const updated = await prisma.stock.update({ where: { symbol }, data: { name } })
-await prisma.stock.delete({ where: { symbol } })
-```
+- User-facing errors should be in Chinese
 
 ### Styling
 
 - Use Tailwind CSS utility classes
 - Use `cn()` utility for conditional class merging
+- Use design tokens (CSS variables) for colors
 
 ```typescript
 import { cn } from '@/lib/utils'
@@ -212,67 +211,96 @@ import { cn } from '@/lib/utils'
 
 ### Naming Conventions
 
-- **Files**: kebab-case (e.g., `backtest-engine.ts`, `chart-container.tsx`)
-- **Components**: PascalCase (e.g., `ChartContainer`, `BacktestRunner`)
-- **Functions**: camelCase (e.g., `calculateIndicators`, `executeBacktest`)
-- **Constants**: SCREAMING_SNAKE_CASE for global constants (e.g., `INDICATOR_COLORS`)
-- **Database models**: PascalCase (e.g., `FactorStrategy`, `BacktestPlan`)
+| Type | Convention | Example |
+|------|-----------|---------|
+| Files | kebab-case | `backtest-engine.ts`, `chart-container.tsx` |
+| Components | PascalCase | `BacktestRunner`, `FactorScreener` |
+| Functions | camelCase | `calculateIndicators`, `executeBacktest` |
+| Hooks | camelCase with 'use' prefix | `usePortfolio`, `useAlert` |
+| Constants | SCREAMING_SNAKE_CASE | `DEFAULT_SYMBOLS`, `INDICATOR_COLORS` |
+| Prisma models | PascalCase | `PortfolioBacktestPlan`, `FactorHistory` |
+| Database fields | snake_case | `created_at`, `portfolio_id` |
 
 ### Comments
 
-- **Avoid unnecessary comments**: Code should be self-documenting
-- **Use comments only when necessary**: Complex algorithms, security-related code, performance optimizations
+- **No unnecessary comments**: Code should be self-documenting
+- **Complex logic**: Add brief comment explaining why (not what)
 - **No Chinese comments in code**: Keep code comments in English
+- **API documentation**: Use JSDoc for complex functions if needed
+
+### Database (Prisma)
+
+```typescript
+// Singleton pattern
+import { prisma } from '@/lib/prisma'
+
+// After schema changes, run:
+npx prisma db push
+npx prisma generate
+```
+
+## UI/UX Guidelines
+
+- **Chinese UI**: All user-facing text should be in Chinese
+- **Responsive**: Use Tailwind responsive prefixes (sm:, md:, lg:)
+- **Accessibility**: Use semantic HTML, proper ARIA labels
+- **Loading states**: Always show loading indicators for async operations
+- **Error states**: Display user-friendly error messages
 
 ## Key Patterns
 
-### Prisma Client Singleton
+### DataSource Abstraction
 
 ```typescript
-// src/lib/prisma.ts
-import { PrismaClient } from '@prisma/client'
+import { DataSource } from '@/lib/data/data-source'
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
-}
-
-export const prisma = globalForPrisma.prisma ?? new PrismaClient()
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+const dataSource = new DataSource()
+const data = await dataSource.getHistoricalData('AAPL', '1y')
 ```
 
-### API Response Format
+### Risk Metrics
 
 ```typescript
-// Success
-return NextResponse.json({ data })
+import { RiskMetricsCalculator } from '@/lib/backtest/risk-metrics'
 
-// Error
-return NextResponse.json({ error: 'Error message' }, { status: 400 })
+const calculator = new RiskMetricsCalculator()
+const metrics = calculator.calculate(equityCurve)
 ```
 
-### Mock Data Fallback
-
-When external APIs fail, return mock data:
+### Factor Screening
 
 ```typescript
-const mockData = { symbol: 'AAPL', price: 150.0 + Math.random() * 50 }
-return NextResponse.json(mockData)
+import { FactorLibrary } from '@/lib/factors/factor-library'
+import { ScreeningEngine } from '@/lib/factors/screening-engine'
+
+const library = new FactorLibrary()
+const engine = new ScreeningEngine(library)
+const results = await engine.screen(strategy, symbols)
 ```
 
-## Database Schema
+### WebSocket Alerts
 
-12 Prisma models:
-- `Stock`, `HistoricalData`, `UserConfig` - Core stock data
-- `FactorStrategy`, `FactorRule`, `ScreeningResult` - Factor screening
-- `BacktestPlan`, `BacktestTrade` - Backtesting
-- `Alert` - Price alerts
-- `Portfolio`, `Position`, `Transaction` - Portfolio management
+```typescript
+import { io } from 'socket.io-client'
+
+const socket = io('ws://localhost:3001')
+socket.on('alert-triggered', (alert) => {
+  console.log('Alert triggered:', alert)
+})
+```
+
+## Database Models (Prisma)
+
+Core models: `Stock`, `HistoricalData`, `UserConfig`
+Factor models: `FactorStrategy`, `FactorRule`, `FactorHistory`, `ScreeningResult`
+Backtest models: `BacktestPlan`, `BacktestTrade`, `PortfolioBacktestPlan`
+Alert models: `Alert`, `RiskAlertLog`
+Portfolio models: `Portfolio`, `Position`, `Transaction`
 
 ## Important Notes
 
-1. **No tests yet**: Test framework should be added in the future
-2. **Chinese UI**: User-facing text should be in Chinese
-3. **Mock data**: Yahoo Finance API has mock fallback for development
-4. **WebSocket**: Real-time features use Socket.io on port 3001
-5. **Database**: SQLite file is at `prisma/dev.db` (gitignored)
+1. **Learning Mode**: Navigation has a learning mode toggle for educational content
+2. **Mock Fallback**: Data layer falls back to mock data when Yahoo Finance fails
+3. **Preset Strategies**: Factor screener and backtest runners have preset strategies for quick testing
+4. **WebSocket**: Alert system uses Socket.io on port 3001
+5. **Database**: SQLite file at `prisma/dev.db` (gitignored)
