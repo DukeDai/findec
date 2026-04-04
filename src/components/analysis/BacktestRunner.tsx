@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Play, TrendingUp, Activity, Zap } from 'lucide-react'
+import { MetricCard } from '@/components/ui/metric-explanation'
+import { ParameterGuide } from '@/components/ui/parameter-guide'
+import { ConceptTooltip } from '@/components/ui/concept-tooltip'
 
 interface BacktestPlan {
   id: string
@@ -36,6 +39,44 @@ const QUICK_STRATEGIES: { id: string; name: string; params: Record<string, numbe
   { id: 'macd', name: 'MACD交叉', params: { macdFast: 12, macdSlow: 26, macdSignal: 9 } },
   { id: 'bollinger', name: '布林带', params: { bollingerPeriod: 20, bollingerStdDev: 2 } },
 ]
+
+const CONCEPT_DEFINITIONS: Record<string, { name: string; description: string; interpretation: string }> = {
+  '夏普比率': {
+    name: '夏普比率 (Sharpe Ratio)',
+    description: '衡量每承担一单位风险所获得的超额收益。计算公式为 (策略收益率 - 无风险收益率) / 策略收益标准差。',
+    interpretation: '夏普比率 > 1 表示较好，> 2 非常好，< 0 表示策略还不如无风险资产。'
+  },
+  '最大回撤': {
+    name: '最大回撤 (Max Drawdown)',
+    description: '策略从历史最高点到最低点的最大跌幅。反映策略可能遭受的最大损失。',
+    interpretation: '最大回撤越小越好。一般认为 < 20% 可接受，< 10% 优秀。'
+  },
+  '卡尔玛比率': {
+    name: '卡尔玛比率 (Calmar Ratio)',
+    description: '年化收益与最大回撤的比值。衡量每单位最大回撤对应的收益。',
+    interpretation: '卡尔玛比率越高越好。> 1 表示优质策略，> 2 非常优秀。'
+  },
+  '索提诺比率': {
+    name: '索提诺比率 (Sortino Ratio)',
+    description: '类似夏普比率，但只考虑下行波动风险。计算公式为 (收益 - 目标收益) / 下行标准差。',
+    interpretation: '索提诺比率越高越好，因为它更关注对投资者重要的下行风险。'
+  },
+  'VaR': {
+    name: '风险价值 (VaR)',
+    description: '在给定置信水平下，策略在特定时间内可能遭受的最大损失。',
+    interpretation: 'VaR 95% = -5% 表示有 95% 的概率，损失不会超过 5%。'
+  },
+  '波动率': {
+    name: '波动率 (Volatility)',
+    description: '策略收益的标准差，衡量收益的离散程度。',
+    interpretation: '波动率越高，策略风险越大。一般与收益正相关。'
+  },
+  '胜率': {
+    name: '胜率 (Win Rate)',
+    description: '盈利交易次数占总交易次数的比例。',
+    interpretation: '高胜率不一定盈利好，还需要看盈亏比。趋势策略胜率低但盈亏比高。'
+  }
+}
 
 const DEFAULT_SYMBOL = 'AAPL'
 const DEFAULT_PERIOD = { start: '2024-01-01', end: '2024-12-31' }
@@ -237,7 +278,17 @@ export function BacktestRunner() {
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <p className="text-sm font-medium">快速回测</p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium">快速回测</p>
+          <ConceptTooltip
+            concept="快速回测"
+            title="快速回测"
+            description="使用预设参数快速体验不同策略的效果"
+            example="点击任意策略即可使用AAPL 2024年数据进行回测"
+          >
+            <span></span>
+          </ConceptTooltip>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {QUICK_STRATEGIES.map((qs) => (
             <button
@@ -337,105 +388,105 @@ export function BacktestRunner() {
           </div>
 
           {['ma_crossover', 'dual_ma', 'trend_follow'].includes(strategyConfig.strategy) && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm text-muted-foreground">短期均线周期</label>
-                <input
-                  type="number"
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm mt-1"
-                  value={strategyConfig.shortWindow}
-                  onChange={(e) => setStrategyConfig({ ...strategyConfig, shortWindow: parseInt(e.target.value) })}
-                />
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">长期均线周期</label>
-                <input
-                  type="number"
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm mt-1"
-                  value={strategyConfig.longWindow}
-                  onChange={(e) => setStrategyConfig({ ...strategyConfig, longWindow: parseInt(e.target.value) })}
-                />
-              </div>
+            <div className="space-y-4">
+              <ParameterGuide
+                paramName="短期均线周期"
+                value={strategyConfig.shortWindow}
+                min={5}
+                max={50}
+                typicalValues={[10, 20, 30]}
+                onChange={(v) => setStrategyConfig({ ...strategyConfig, shortWindow: v })}
+                description="短期均线使用的天数。值越小反应越快，但也可能产生更多假信号。"
+              />
+              <ParameterGuide
+                paramName="长期均线周期"
+                value={strategyConfig.longWindow}
+                min={20}
+                max={200}
+                typicalValues={[50, 100, 200]}
+                onChange={(v) => setStrategyConfig({ ...strategyConfig, longWindow: v })}
+                description="长期均线使用的天数。值越大越稳定，但信号滞后。"
+              />
             </div>
           )}
 
           {strategyConfig.strategy === 'rsi' && (
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="text-sm text-muted-foreground">RSI周期</label>
-                <input
-                  type="number"
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm mt-1"
-                  value={strategyConfig.rsiPeriod}
-                  onChange={(e) => setStrategyConfig({ ...strategyConfig, rsiPeriod: parseInt(e.target.value) })}
-                />
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">超买线</label>
-                <input
-                  type="number"
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm mt-1"
-                  value={strategyConfig.rsiOverbought}
-                  onChange={(e) => setStrategyConfig({ ...strategyConfig, rsiOverbought: parseInt(e.target.value) })}
-                />
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">超卖线</label>
-                <input
-                  type="number"
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm mt-1"
-                  value={strategyConfig.rsiOversold}
-                  onChange={(e) => setStrategyConfig({ ...strategyConfig, rsiOversold: parseInt(e.target.value) })}
-                />
-              </div>
+            <div className="space-y-4">
+              <ParameterGuide
+                paramName="RSI周期"
+                value={strategyConfig.rsiPeriod}
+                min={5}
+                max={30}
+                typicalValues={[7, 14, 21]}
+                onChange={(v) => setStrategyConfig({ ...strategyConfig, rsiPeriod: v })}
+                description="RSI计算使用的周期。常用14天。"
+              />
+              <ParameterGuide
+                paramName="超买线"
+                value={strategyConfig.rsiOverbought}
+                min={60}
+                max={90}
+                typicalValues={[70, 75, 80]}
+                onChange={(v) => setStrategyConfig({ ...strategyConfig, rsiOverbought: v })}
+                description="RSI高于此值视为超买，产生卖出信号。"
+              />
+              <ParameterGuide
+                paramName="超卖线"
+                value={strategyConfig.rsiOversold}
+                min={10}
+                max={40}
+                typicalValues={[20, 25, 30]}
+                onChange={(v) => setStrategyConfig({ ...strategyConfig, rsiOversold: v })}
+                description="RSI低于此值视为超卖，产生买入信号。"
+              />
             </div>
           )}
 
           {strategyConfig.strategy === 'bollinger' && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm text-muted-foreground">周期</label>
-                <input
-                  type="number"
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm mt-1"
-                  value={strategyConfig.bollingerPeriod}
-                  onChange={(e) => setStrategyConfig({ ...strategyConfig, bollingerPeriod: parseInt(e.target.value) })}
-                />
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">标准差倍数</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm mt-1"
-                  value={strategyConfig.bollingerStdDev}
-                  onChange={(e) => setStrategyConfig({ ...strategyConfig, bollingerStdDev: parseFloat(e.target.value) })}
-                />
-              </div>
+            <div className="space-y-4">
+              <ParameterGuide
+                paramName="布林带周期"
+                value={strategyConfig.bollingerPeriod}
+                min={10}
+                max={50}
+                typicalValues={[14, 20, 26]}
+                onChange={(v) => setStrategyConfig({ ...strategyConfig, bollingerPeriod: v })}
+                description="布林带中轨的均线周期。常用20天。"
+              />
+              <ParameterGuide
+                paramName="标准差倍数"
+                value={strategyConfig.bollingerStdDev}
+                min={1}
+                max={4}
+                step={0.5}
+                typicalValues={[1.5, 2, 2.5]}
+                onChange={(v) => setStrategyConfig({ ...strategyConfig, bollingerStdDev: v })}
+                description="上下轨距离中轨的标准差倍数。常用2倍。"
+              />
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm text-muted-foreground">止损 % (0=不启用)</label>
-              <input
-                type="number"
-                step="0.5"
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm mt-1"
-                value={strategyConfig.stopLoss}
-                onChange={(e) => setStrategyConfig({ ...strategyConfig, stopLoss: parseFloat(e.target.value) })}
-              />
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground">止盈 % (0=不启用)</label>
-              <input
-                type="number"
-                step="0.5"
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm mt-1"
-                value={strategyConfig.takeProfit}
-                onChange={(e) => setStrategyConfig({ ...strategyConfig, takeProfit: parseFloat(e.target.value) })}
-              />
-            </div>
+          <div className="space-y-4">
+            <ParameterGuide
+              paramName="止损 % (0=不启用)"
+              value={strategyConfig.stopLoss}
+              min={0}
+              max={20}
+              step={0.5}
+              typicalValues={[0, 3, 5, 8]}
+              onChange={(v) => setStrategyConfig({ ...strategyConfig, stopLoss: v })}
+              description="亏损超过此百分比自动卖出。0表示不启用止损。"
+            />
+            <ParameterGuide
+              paramName="止盈 % (0=不启用)"
+              value={strategyConfig.takeProfit}
+              min={0}
+              max={50}
+              step={0.5}
+              typicalValues={[0, 10, 20, 30]}
+              onChange={(v) => setStrategyConfig({ ...strategyConfig, takeProfit: v })}
+              description="盈利超过此百分比自动卖出。0表示不启用止盈。"
+            />
           </div>
 
           <div className="flex gap-2">
@@ -470,24 +521,46 @@ export function BacktestRunner() {
 
       {selectedPlan && (
         <div className="grid grid-cols-4 gap-4">
-          <div className="rounded-lg border p-3">
-            <div className="text-xs text-muted-foreground">总收益</div>
-            <div className={`text-lg font-bold ${(selectedPlan.totalReturn || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {selectedPlan.totalReturn?.toFixed(2)}%
-            </div>
-          </div>
-          <div className="rounded-lg border p-3">
-            <div className="text-xs text-muted-foreground">夏普比率</div>
-            <div className="text-lg font-bold">{selectedPlan.sharpeRatio?.toFixed(2)}</div>
-          </div>
-          <div className="rounded-lg border p-3">
-            <div className="text-xs text-muted-foreground">最大回撤</div>
-            <div className="text-lg font-bold text-red-500">{selectedPlan.maxDrawdown?.toFixed(2)}%</div>
-          </div>
-          <div className="rounded-lg border p-3">
-            <div className="text-xs text-muted-foreground">交易次数</div>
-            <div className="text-lg font-bold">{trades.filter((t) => t.type === 'SELL').length}</div>
-          </div>
+          <MetricCard
+            label="总收益"
+            value={selectedPlan.totalReturn || 0}
+            format="percent"
+            change={selectedPlan.totalReturn || 0}
+            concept={{
+              name: '总收益',
+              description: '回测期间的总收益百分比',
+              interpretation: '正数表示盈利，负数表示亏损'
+            }}
+          />
+          <MetricCard
+            label="夏普比率"
+            value={selectedPlan.sharpeRatio || 0}
+            format="ratio"
+            concept={{
+              name: CONCEPT_DEFINITIONS['夏普比率'].name,
+              description: CONCEPT_DEFINITIONS['夏普比率'].description,
+              interpretation: CONCEPT_DEFINITIONS['夏普比率'].interpretation
+            }}
+          />
+          <MetricCard
+            label="最大回撤"
+            value={selectedPlan.maxDrawdown || 0}
+            format="percent"
+            concept={{
+              name: CONCEPT_DEFINITIONS['最大回撤'].name,
+              description: CONCEPT_DEFINITIONS['最大回撤'].description,
+              interpretation: CONCEPT_DEFINITIONS['最大回撤'].interpretation
+            }}
+          />
+          <MetricCard
+            label="交易次数"
+            value={trades.filter((t) => t.type === 'SELL').length}
+            concept={{
+              name: '交易次数',
+              description: '回测期间的总卖出交易次数',
+              interpretation: '次数过多可能意味着过度交易，产生更多成本'
+            }}
+          />
         </div>
       )}
 

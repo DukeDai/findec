@@ -3,6 +3,7 @@
  */
 
 import { Quote, HistoricalPrice, StockSearchResult, HistoricalRange, HistoricalInterval } from '@/types/stock';
+import { FundamentalData } from '@/lib/yahoo-finance';
 import { RateLimiter, yahooFinanceRateLimiter } from './rate-limiter';
 import { CacheManager, defaultCacheManager } from './cache-manager';
 
@@ -53,6 +54,35 @@ interface YahooSearchResult {
   longname?: string;
   exchange?: string;
   quoteType?: string;
+}
+
+interface YahooSummaryResponse {
+  quoteSummary: {
+    result: YahooSummaryResult[];
+    error: null | { description: string };
+  }
+}
+
+interface YahooSummaryResult {
+  assetProfile?: {
+    longName?: string;
+  }
+  summaryDetail?: {
+    marketCap?: { raw: number }
+    trailingPE?: { raw: number }
+    pegRatio?: { raw: number }
+    priceToBook?: { raw: number }
+    dividendYield?: { raw: number }
+    fiftyTwoWeekHigh?: { raw: number }
+    fiftyTwoWeekLow?: { raw: number }
+    beta?: { raw: number }
+    epsTrailing12Months?: { raw: number }
+    previousClose?: { raw: number }
+  }
+  price?: {
+    regularMarketPrice?: { raw: number }
+    longName?: string;
+  }
 }
 
 class DataSourceError extends Error {
@@ -296,6 +326,68 @@ export class DataSource {
 
       throw error;
     }
+  }
+
+  async getFundamentalData(symbol: string): Promise<FundamentalData> {
+    const normalizedSymbol = symbol.toUpperCase();
+
+    try {
+      await this.rateLimiter.acquire();
+
+      const url = `${YAHOO_FINANCE_BASE_URL}/quoteSummary/${normalizedSymbol}?modules=summaryDetail,assetProfile,price`;
+      const response = await fetch(url, {
+        headers: { Accept: 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new DataSourceError(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = (await response.json()) as YahooSummaryResponse;
+
+      if (data.quoteSummary.error) {
+        throw new DataSourceError(`Yahoo Finance API error: ${data.quoteSummary.error.description}`);
+      }
+
+      if (!data.quoteSummary.result || data.quoteSummary.result.length === 0) {
+        throw new DataSourceError(`No data found for symbol: ${normalizedSymbol}`);
+      }
+
+      const result = data.quoteSummary.result[0];
+      const summary = result.summaryDetail;
+      const price = result.price;
+      const assetProfile = result.assetProfile;
+
+      if (!summary) {
+        throw new DataSourceError(`No summary data available for symbol: ${normalizedSymbol}`);
+      }
+
+      const name = assetProfile?.longName || price?.longName || normalizedSymbol;
+      const priceValue = price?.regularMarketPrice?.raw ?? summary.previousClose?.raw ?? 0;
+      const marketCap = summary.marketCap?.raw ?? 0;
+
+      return {
+        symbol: normalizedSymbol,
+        name,
+        price: priceValue,
+        marketCap,
+        pe: summary.trailingPE?.raw ?? null,
+        peg: summary.pegRatio?.raw ?? null,
+        pb: summary.priceToBook?.raw ?? null,
+        dividendYield: summary.dividendYield?.raw ? summary.dividendYield.raw * 100 : null,
+        eps: summary.epsTrailing12Months?.raw ?? null,
+        beta: summary.beta?.raw ?? null,
+        week52High: summary.fiftyTwoWeekHigh?.raw ?? 0,
+        week52Low: summary.fiftyTwoWeekLow?.raw ?? 0,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getBenchmarkData(symbol: 'SPY' | 'QQQ', range: string): Promise<DataPoint[]> {
+    const normalizedSymbol = symbol.toUpperCase() as 'SPY' | 'QQQ';
+    return this.getHistoricalData(normalizedSymbol, range);
   }
 
   async checkHealth(): Promise<{ yahoo: boolean; fallback: boolean }> {

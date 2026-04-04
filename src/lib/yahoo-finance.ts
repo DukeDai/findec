@@ -3,6 +3,21 @@ import { DataSource, defaultDataSource } from '@/lib/data/data-source';
 
 const YAHOO_FINANCE_BASE_URL = 'https://query1.finance.yahoo.com/v8/finance';
 
+export interface FundamentalData {
+  symbol: string
+  name: string
+  price: number
+  marketCap: number
+  pe: number | null
+  peg: number | null
+  pb: number | null
+  dividendYield: number | null
+  eps: number | null
+  beta: number | null
+  week52High: number
+  week52Low: number
+}
+
 interface YahooQuoteResponse {
   quoteResponse: {
     result: YahooQuoteResult[];
@@ -100,6 +115,10 @@ export async function getHistoricalData(
 
 export async function searchStocks(query: string): Promise<StockSearchResult[]> {
   return defaultDataSource.searchStocks(query);
+}
+
+export async function getFundamentalData(symbol: string): Promise<FundamentalData> {
+  return defaultDataSource.getFundamentalData(symbol);
 }
 
 export { YahooFinanceError, defaultDataSource, DataSource };

@@ -36,6 +36,15 @@ export interface RiskMetrics {
   maxConsecutiveLosses: number
 }
 
+export interface BenchmarkComparison {
+  alpha: number
+  beta: number
+  trackingError: number
+  informationRatio: number
+  correlation: number
+  rSquared: number
+}
+
 export interface TradeForStats {
   type: 'BUY' | 'SELL'
   value: number
@@ -309,6 +318,72 @@ export class RiskMetricsCalculator {
       avgLoss,
       profitFactor,
       maxConsecutiveLosses,
+    }
+  }
+
+  calculateBenchmarkComparison(
+    portfolioReturns: number[],
+    benchmarkReturns: number[],
+    riskFreeRate = 0.02
+  ): BenchmarkComparison {
+    if (portfolioReturns.length < 2 || benchmarkReturns.length < 2) {
+      return {
+        alpha: 0,
+        beta: 1,
+        trackingError: 0,
+        informationRatio: 0,
+        correlation: 0,
+        rSquared: 0,
+      }
+    }
+
+    const n = Math.min(portfolioReturns.length, benchmarkReturns.length)
+    const portfolioSlice = portfolioReturns.slice(0, n)
+    const benchmarkSlice = benchmarkReturns.slice(0, n)
+
+    const portfolioMean = portfolioSlice.reduce((sum, r) => sum + r, 0) / n
+    const benchmarkMean = benchmarkSlice.reduce((sum, r) => sum + r, 0) / n
+
+    const portfolioStd = Math.sqrt(
+      portfolioSlice.reduce((sum, r) => sum + Math.pow(r - portfolioMean, 2), 0) / n
+    )
+    const benchmarkStd = Math.sqrt(
+      benchmarkSlice.reduce((sum, r) => sum + Math.pow(r - benchmarkMean, 2), 0) / n
+    )
+
+    const covariance =
+      portfolioSlice.reduce(
+        (sum, r, i) => sum + (r - portfolioMean) * (benchmarkSlice[i] - benchmarkMean),
+        0
+      ) / n
+
+    const beta = benchmarkStd > 0 ? covariance / (benchmarkStd * benchmarkStd) : 1
+
+    const annualizedPortfolioReturn = portfolioMean * 252
+    const annualizedBenchmarkReturn = benchmarkMean * 252
+    const alpha = annualizedPortfolioReturn - riskFreeRate - beta * (annualizedBenchmarkReturn - riskFreeRate)
+
+    const trackingErrors: number[] = []
+    for (let i = 0; i < n; i++) {
+      trackingErrors.push(portfolioSlice[i] - beta * benchmarkSlice[i])
+    }
+    const trackingError =
+      Math.sqrt(trackingErrors.reduce((sum, r) => sum + r * r, 0) / n) * Math.sqrt(252) * 100
+
+    const correlation =
+      benchmarkStd > 0 && portfolioStd > 0 ? covariance / (portfolioStd * benchmarkStd) : 0
+
+    const rSquared = correlation * correlation
+
+    const informationRatio = trackingError > 0 ? (alpha * 100) / trackingError : 0
+
+    return {
+      alpha: alpha * 100,
+      beta,
+      trackingError,
+      informationRatio,
+      correlation,
+      rSquared,
     }
   }
 }

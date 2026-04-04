@@ -41,6 +41,8 @@ export interface BacktestConfig {
   strategies: StrategyConfig[]
   rebalance: 'none' | 'daily' | 'weekly' | 'monthly'
   rebalanceThreshold: number
+  startDate?: Date | string
+  endDate?: Date | string
 }
 
 export interface BacktestResult {

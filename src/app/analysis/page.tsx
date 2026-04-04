@@ -6,15 +6,39 @@ import { BacktestRunner } from '@/components/analysis/BacktestRunner'
 import { PortfolioBacktestRunner } from '@/components/analysis/PortfolioBacktestRunner'
 import { AlertManager } from '@/components/analysis/AlertManager'
 import { PortfolioDashboard } from '@/components/analysis/PortfolioDashboard'
+import { ConceptTooltip } from '@/components/ui/concept-tooltip'
 
 type Tab = 'screener' | 'backtest' | 'portfolio-backtest' | 'alerts' | 'portfolio'
 
 const TAB_TITLES: Record<Tab, { title: string; description: string }> = {
-  screener: { title: '因子选股', description: '根据预设的因子条件和规则筛选符合条件的股票' },
-  backtest: { title: '单股回测', description: '使用历史数据回测单个股票的策略，评估策略绩效' },
-  'portfolio-backtest': { title: '组合回测', description: '回测多股票组合策略，支持资产配置和再平衡' },
-  alerts: { title: '实时监控', description: '设置价格预警，实时监控股票价格变化' },
-  portfolio: { title: '组合分析', description: '管理投资组合，跟踪持仓绩效和资产配置' },
+  screener: { title: '因子选股', description: '通过量化因子筛选符合条件股票的方法' },
+  backtest: { title: '单股回测', description: '在历史数据上模拟策略表现' },
+  'portfolio-backtest': { title: '组合回测', description: '多股票组合的策略回测与资产配置' },
+  alerts: { title: '实时监控', description: '设置价格预警，实时追踪' },
+  portfolio: { title: '组合分析', description: '管理投资组合，跟踪持仓' },
+}
+
+const TAB_DETAILS: Record<Tab, { description: string; example: string }> = {
+  screener: {
+    description: '因子选股是通过预设的量化因子（如市盈率、市净率、ROE等）筛选符合条件的股票的方法。',
+    example: '选择低PE、高ROE、小市值的股票构建投资组合，长期持有获取超额收益。'
+  },
+  backtest: {
+    description: '单股回测是在历史数据上模拟交易策略的表现，评估策略的有效性和风险特征。',
+    example: '在AAPL 2020-2023年数据上测试MA均线策略，观察总收益、最大回撤等指标。'
+  },
+  'portfolio-backtest': {
+    description: '组合回测是对多股票组合进行策略回测，支持资产配置优化和定期再平衡。',
+    example: '同时回测AAPL、MSFT、GOOGL三只股票，每月再平衡，目标等权重配置。'
+  },
+  alerts: {
+    description: '实时监控允许设置价格预警条件，当条件触发时通过WebSocket实时通知。',
+    example: '设置AAPL价格高于$150或日涨幅超过5%时发送预警通知。'
+  },
+  portfolio: {
+    description: '组合分析帮助管理投资组合，跟踪持仓表现、计算收益风险指标。',
+    example: '创建"科技股组合"，添加AAPL、MSFT等持仓，实时监控组合总市值和盈亏。'
+  }
 }
 
 export default function AnalysisPage() {
@@ -40,17 +64,24 @@ export default function AnalysisPage() {
 
         <div className="flex gap-1 border-b mb-6">
           {tabs.map((tab) => (
-            <button
+            <ConceptTooltip
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
-                activeTab === tab.id
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
+              concept={tab.id}
+              title={TAB_TITLES[tab.id].title}
+              description={TAB_DETAILS[tab.id].description}
+              example={TAB_DETAILS[tab.id].example}
             >
-              {tab.label}
-            </button>
+              <button
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                  activeTab === tab.id
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {tab.label}
+              </button>
+            </ConceptTooltip>
           ))}
         </div>
 

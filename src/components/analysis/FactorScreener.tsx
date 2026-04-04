@@ -2,7 +2,42 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Play, TrendingUp, TrendingDown, Activity } from 'lucide-react'
+import { Play, TrendingUp, TrendingDown, Activity, DollarSign } from 'lucide-react'
+import { ConceptTooltip } from '@/components/ui/concept-tooltip'
+import { MetricCard } from '@/components/ui/metric-explanation'
+
+const FACTOR_CONCEPTS: Record<string, { name: string; description: string; interpretation: string }> = {
+  '市净率(PB)': {
+    name: '市净率 (P/B Ratio)',
+    description: '股票价格与每股净资产的比值。反映股票相对于其账面价值的溢价。',
+    interpretation: 'PB < 1 表示股价低于净资产，可能被低估；金融股常用 PB 估值。'
+  },
+  '市盈率(PE)': {
+    name: '市盈率 (P/E Ratio)',
+    description: '股票价格与每股收益的比值。反映投资者为获得1元利润愿意支付的价格。',
+    interpretation: 'PE 越低越便宜，但需结合行业和增速。周期性行业 PE 低时反而危险。'
+  },
+  'PEG': {
+    name: 'PEG 比率',
+    description: '市盈率与净利润增速的比值。综合考虑估值和成长性。',
+    interpretation: 'PEG < 1 表示可能被低估；PEG > 2 表示成长被高估。'
+  },
+  '股息率': {
+    name: '股息率 (Dividend Yield)',
+    description: '年度股息总额与当前股价的比值。',
+    interpretation: '股息率高说明公司愿意分红，但需确认分红可持续性。'
+  },
+  'ROE': {
+    name: '净资产收益率 (ROE)',
+    description: '净利润与净资产的比值。衡量公司使用股东资本的效率。',
+    interpretation: 'ROE > 15% 表示优质公司；持续高 ROE 说明有护城河。'
+  },
+  '负债率': {
+    name: '资产负债率',
+    description: '负债总额与资产总额的比值。反映公司的财务风险程度。',
+    interpretation: '一般建议 < 50%，金融地产等行业除外。'
+  }
+}
 
 interface FactorStrategy {
   id: string
@@ -30,6 +65,19 @@ const PRESET_STRATEGIES: FactorStrategy[] = [
       { field: 'rsi_14', operator: '<', value: 70, weight: 0.3 },
       { field: 'ma20_position', operator: '>', value: 0, weight: 0.2 },
       { field: 'momentum_10d', operator: '>', value: 0, weight: 0.2 },
+    ],
+  },
+  {
+    id: 'value_investing',
+    name: '价值投资',
+    description: '筛选低估值高分红的优质股票',
+    rules: [
+      { field: 'pe_ratio', operator: '<', value: 25, weight: 0.25 },
+      { field: 'pe_ratio', operator: '>', value: 0, weight: 0.15 },
+      { field: 'peg_ratio', operator: '<', value: 1.5, weight: 0.2 },
+      { field: 'pb_ratio', operator: '<', value: 5, weight: 0.15 },
+      { field: 'dividend_yield', operator: '>', value: 1, weight: 0.15 },
+      { field: 'beta', operator: '<', value: 1.5, weight: 0.1 },
     ],
   },
   {
@@ -115,6 +163,24 @@ export function FactorScreener() {
     }
   }
 
+  const renderFactorLabel = (field: string) => {
+    const concept = FACTOR_CONCEPTS[field]
+    const label = field
+    
+    if (!concept) return <span>{label}</span>
+    
+    return (
+      <ConceptTooltip
+        concept={field}
+        title={concept.name}
+        description={concept.description}
+        example={concept.interpretation}
+      >
+        <span className="cursor-help underline decoration-dotted hover:decoration-solid">{label}</span>
+      </ConceptTooltip>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -133,6 +199,8 @@ export function FactorScreener() {
                 <TrendingDown className="w-5 h-5 text-green-500" />
               ) : strategy.id === 'strong_trend' ? (
                 <TrendingUp className="w-5 h-5 text-blue-500" />
+              ) : strategy.id === 'value_investing' ? (
+                <DollarSign className="w-5 h-5 text-emerald-500" />
               ) : (
                 <Activity className="w-5 h-5 text-purple-500" />
               )}
@@ -149,7 +217,7 @@ export function FactorScreener() {
           <div className="flex flex-wrap gap-2">
             {selectedStrategy.rules.map((rule, i) => (
               <span key={i} className="text-xs px-2 py-1 rounded bg-background border">
-                {rule.field} {rule.operator} {rule.value} (权重{rule.weight})
+                {renderFactorLabel(rule.field)} {rule.operator} {rule.value} (权重{rule.weight})
               </span>
             ))}
           </div>

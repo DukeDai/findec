@@ -4,8 +4,57 @@ import { useState, useEffect } from 'react'
 import { BacktestChart } from './BacktestChart'
 import { RiskMetricsCard } from './RiskMetricsCard'
 import { TradeLog } from './TradeLog'
+import { StrategyExplorer } from './StrategyExplorer'
+import { OptimizationResults } from './OptimizationResults'
+import { WalkForwardChart } from './WalkForwardChart'
+import { MonteCarloChart } from './MonteCarloChart'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Loader2 } from 'lucide-react'
+import { ConceptTooltip } from '@/components/ui/concept-tooltip'
+
+const STRATEGY_CONCEPTS: Record<string, { title: string; description: string; example: string }> = {
+  'ma_crossover': {
+    title: 'MA均线交叉策略',
+    description: '通过短期均线和长期均线的交叉产生买卖信号。当短期均线上穿长期均线时买入，下穿时卖出。',
+    example: '20日均线突破50日均线时买入，跌破时卖出。适合趋势明显的市场。'
+  },
+  'dual_ma': {
+    title: '双均线策略',
+    description: '使用两条不同周期的均线，通过价格与均线的相对位置判断趋势。',
+    example: '价格在双均线上方看多，下方看空。适合中长期趋势跟踪。'
+  },
+  'rsi': {
+    title: 'RSI超买超卖策略',
+    description: '相对强弱指标(RSI)衡量价格变动速度和幅度，判断超买超卖状态。',
+    example: 'RSI < 30 超卖买入，RSI > 70 超买卖出。震荡市效果更好。'
+  },
+  'macd': {
+    title: 'MACD策略',
+    description: '移动平均收敛散度，通过快慢线和信号线的交叉产生交易信号。',
+    example: 'MACD线上穿信号线买入，下穿卖出。适合捕捉趋势转折。'
+  },
+  'bollinger': {
+    title: '布林带策略',
+    description: '由中轨(均线)和上下轨(标准差)组成，价格在轨道间波动。',
+    example: '触及下轨买入，触及上轨卖出。适合区间震荡行情。'
+  },
+  'momentum': {
+    title: '动量策略',
+    description: '基于价格动量(涨幅)进行交易，强者恒强。',
+    example: '过去N天涨幅最大的股票买入，跌幅大的卖出。适合强势市场。'
+  },
+  'mean_reversion': {
+    title: '均值回归策略',
+    description: '假设价格会回归长期均值，偏离均值时反向操作。',
+    example: '价格远高于均线时卖出，远低于时买入。适合震荡市。'
+  },
+  'trend_follow': {
+    title: '趋势跟踪策略',
+    description: '顺势而为，在确认趋势方向后跟随交易。',
+    example: '趋势向上时做多，向下时做空或空仓。趋势越强收益越好。'
+  }
+}
 
 interface BacktestPlan {
   id: string
@@ -139,6 +188,40 @@ export function PortfolioBacktestRunner() {
     bollingerStdDev: 2,
   })
 
+  const [advancedTab, setAdvancedTab] = useState<'optimization' | 'walkforward' | 'montecarlo' | null>(null)
+  const [optimizationResults, setOptimizationResults] = useState<{
+    params: Record<string, number>
+    metrics: { totalReturn: number; sharpeRatio: number; maxDrawdown: number }
+    rank: number
+  }[] | null>(null)
+  const [optimizing, setOptimizing] = useState(false)
+  const [optimizationError, setOptimizationError] = useState<string | null>(null)
+  const [walkforwardResult, setWalkforwardResult] = useState<{
+    trainResults: { metrics: { sharpeRatio: number; totalReturn: number } }[]
+    testResults: { metrics: { sharpeRatio: number; totalReturn: number } }[]
+    degradation: number
+  } | null>(null)
+  const [walkforwardLoading, setWalkforwardLoading] = useState(false)
+  const [walkforwardError, setWalkforwardError] = useState<string | null>(null)
+  const [walkforwardConfig, setWalkforwardConfig] = useState({
+    trainPeriod: 60,
+    testPeriod: 20,
+    stepDays: 10,
+  })
+  const [monteCarloResult, setMonteCarloResult] = useState<{
+    finalValues: number[]
+    percentiles: Record<number, number>
+    probabilityOfProfit: number
+    averageMaxDrawdown: number
+    initialValue: number
+    medianReturn: number
+  } | null>(null)
+  const [monteCarloLoading, setMonteCarloLoading] = useState(false)
+  const [monteCarloError, setMonteCarloError] = useState<string | null>(null)
+  const [monteCarloConfig, setMonteCarloConfig] = useState({
+    simulations: 1000,
+  })
+
   const loadPlans = async () => {
     try {
       const res = await fetch('/api/backtests/portfolio')
@@ -239,6 +322,114 @@ export function PortfolioBacktestRunner() {
     } finally {
       setExecuting(false)
     }
+  }
+
+  const runOptimization = async (searchParams: { paramName: string; start: number; end: number; step: number }[], metric: string = 'sharpeRatio') => {
+    if (!selectedPlan) return
+    setOptimizing(true)
+    setOptimizationError(null)
+    try {
+      const res = await fetch(`/api/backtests/portfolio/${selectedPlan.id}/optimize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ searchParams, metric }),
+      })
+      if (!res.ok) throw new Error('优化失败')
+      const data = await res.json()
+      setOptimizationResults(data.results || [])
+    } catch (error) {
+      setOptimizationError(error instanceof Error ? error.message : '优化失败')
+    } finally {
+      setOptimizing(false)
+    }
+  }
+
+  const runWalkForward = async () => {
+    if (!selectedPlan) return
+    setWalkforwardLoading(true)
+    setWalkforwardError(null)
+    try {
+      const res = await fetch(`/api/backtests/portfolio/${selectedPlan.id}/walkforward`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(walkforwardConfig),
+      })
+      if (!res.ok) throw new Error('向前验证失败')
+      const data = await res.json()
+      setWalkforwardResult(data)
+    } catch (error) {
+      setWalkforwardError(error instanceof Error ? error.message : '向前验证失败')
+    } finally {
+      setWalkforwardLoading(false)
+    }
+  }
+
+  const runMonteCarlo = async () => {
+    if (!selectedPlan) return
+    setMonteCarloLoading(true)
+    setMonteCarloError(null)
+    try {
+      const res = await fetch(`/api/backtests/portfolio/${selectedPlan.id}/montecarlo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(monteCarloConfig),
+      })
+      if (!res.ok) throw new Error('蒙特卡洛模拟失败')
+      const data = await res.json()
+      setMonteCarloResult(data)
+    } catch (error) {
+      setMonteCarloError(error instanceof Error ? error.message : '蒙特卡洛模拟失败')
+    } finally {
+      setMonteCarloLoading(false)
+    }
+  }
+
+  const applyBestParams = () => {
+    if (optimizationResults && optimizationResults.length > 0) {
+      const best = optimizationResults[0]
+      setStrategyParams(prev => ({
+        ...prev,
+        ...best.params,
+      }))
+    }
+  }
+
+  const getParamRanges = (strategyType: string): Record<string, { min: number; max: number; step: number }> => {
+    const ranges: Record<string, Record<string, { min: number; max: number; step: number }>> = {
+      ma_crossover: {
+        shortWindow: { min: 5, max: 30, step: 5 },
+        longWindow: { min: 20, max: 100, step: 10 },
+      },
+      dual_ma: {
+        shortWindow: { min: 5, max: 30, step: 5 },
+        longWindow: { min: 20, max: 100, step: 10 },
+      },
+      rsi: {
+        rsiPeriod: { min: 7, max: 21, step: 2 },
+        rsiOverbought: { min: 60, max: 80, step: 5 },
+        rsiOversold: { min: 20, max: 40, step: 5 },
+      },
+      macd: {
+        macdFast: { min: 8, max: 16, step: 2 },
+        macdSlow: { min: 20, max: 30, step: 2 },
+        macdSignal: { min: 7, max: 12, step: 1 },
+      },
+      bollinger: {
+        bollingerPeriod: { min: 10, max: 30, step: 5 },
+        bollingerStdDev: { min: 1.5, max: 3, step: 0.5 },
+      },
+      momentum: {
+        shortWindow: { min: 10, max: 60, step: 10 },
+      },
+      mean_reversion: {
+        shortWindow: { min: 10, max: 60, step: 10 },
+      },
+      trend_follow: {
+        shortWindow: { min: 20, max: 100, step: 10 },
+        longWindow: { min: 50, max: 200, step: 10 },
+      },
+    }
+    return ranges[strategyType] || ranges.ma_crossover
   }
 
   const loadReport = async (planId: string) => {
@@ -362,7 +553,19 @@ export function PortfolioBacktestRunner() {
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="text-sm text-muted-foreground">策略</label>
+                <label className="text-sm text-muted-foreground flex items-center gap-1">
+                  策略
+                  {STRATEGY_CONCEPTS[formData.strategy] && (
+                    <ConceptTooltip
+                      concept={formData.strategy}
+                      title={STRATEGY_CONCEPTS[formData.strategy].title}
+                      description={STRATEGY_CONCEPTS[formData.strategy].description}
+                      example={STRATEGY_CONCEPTS[formData.strategy].example}
+                    >
+                      <span></span>
+                    </ConceptTooltip>
+                  )}
+                </label>
                 <select
                   className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm mt-1"
                   value={formData.strategy}
@@ -540,6 +743,169 @@ export function PortfolioBacktestRunner() {
             </CardHeader>
             <CardContent>
               <TradeLog trades={report.trades} pageSize={50} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">高级分析</CardTitle>
+                <div className="flex gap-2">
+                  <Button
+                    variant={advancedTab === 'optimization' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setAdvancedTab(advancedTab === 'optimization' ? null : 'optimization')}
+                  >
+                    参数优化
+                  </Button>
+                  <Button
+                    variant={advancedTab === 'walkforward' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setAdvancedTab(advancedTab === 'walkforward' ? null : 'walkforward')}
+                  >
+                    向前验证
+                  </Button>
+                  <Button
+                    variant={advancedTab === 'montecarlo' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setAdvancedTab(advancedTab === 'montecarlo' ? null : 'montecarlo')}
+                  >
+                    蒙特卡洛
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {advancedTab === 'optimization' && (
+                <div className="space-y-4">
+                  {optimizationError && (
+                    <div className="p-3 bg-red-50 text-red-700 rounded-md text-sm">
+                      {optimizationError}
+                    </div>
+                  )}
+                  {selectedPlan.strategies[0] && (
+                    <StrategyExplorer
+                      strategyType={selectedPlan.strategies[0].type}
+                      defaultParams={selectedPlan.strategies[0].parameters || {}}
+                      paramRanges={getParamRanges(selectedPlan.strategies[0].type)}
+                      onParamsChange={(params) => console.log('Params changed:', params)}
+                      onRun={(params) => {
+                        const searchParams = Object.entries(getParamRanges(selectedPlan.strategies[0].type)).map(([key, range]) => ({
+                          paramName: key,
+                          start: range.min,
+                          end: range.max,
+                          step: range.step,
+                        }))
+                        runOptimization(searchParams)
+                      }}
+                    />
+                  )}
+                  {optimizing && (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                      <span className="ml-2 text-muted-foreground">正在优化参数...</span>
+                    </div>
+                  )}
+                  {optimizationResults && !optimizing && (
+                    <OptimizationResults
+                      results={optimizationResults}
+                      onSelectBest={applyBestParams}
+                    />
+                  )}
+                </div>
+              )}
+
+              {advancedTab === 'walkforward' && (
+                <div className="space-y-4">
+                  {walkforwardError && (
+                    <div className="p-3 bg-red-50 text-red-700 rounded-md text-sm">
+                      {walkforwardError}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-sm text-muted-foreground">训练期 (天)</label>
+                      <input
+                        type="number"
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm mt-1"
+                        value={walkforwardConfig.trainPeriod}
+                        onChange={(e) => setWalkforwardConfig({ ...walkforwardConfig, trainPeriod: parseInt(e.target.value) })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground">测试期 (天)</label>
+                      <input
+                        type="number"
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm mt-1"
+                        value={walkforwardConfig.testPeriod}
+                        onChange={(e) => setWalkforwardConfig({ ...walkforwardConfig, testPeriod: parseInt(e.target.value) })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground">步长 (天)</label>
+                      <input
+                        type="number"
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm mt-1"
+                        value={walkforwardConfig.stepDays}
+                        onChange={(e) => setWalkforwardConfig({ ...walkforwardConfig, stepDays: parseInt(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+                  <Button onClick={runWalkForward} disabled={walkforwardLoading} className="w-full">
+                    {walkforwardLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        正在运行...
+                      </>
+                    ) : (
+                      '运行向前验证'
+                    )}
+                  </Button>
+                  {walkforwardResult && !walkforwardLoading && (
+                    <WalkForwardChart result={walkforwardResult} />
+                  )}
+                </div>
+              )}
+
+              {advancedTab === 'montecarlo' && (
+                <div className="space-y-4">
+                  {monteCarloError && (
+                    <div className="p-3 bg-red-50 text-red-700 rounded-md text-sm">
+                      {monteCarloError}
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-sm text-muted-foreground">模拟次数</label>
+                    <input
+                      type="number"
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm mt-1"
+                      value={monteCarloConfig.simulations}
+                      onChange={(e) => setMonteCarloConfig({ ...monteCarloConfig, simulations: parseInt(e.target.value) })}
+                      min={100}
+                      max={10000}
+                    />
+                  </div>
+                  <Button onClick={runMonteCarlo} disabled={monteCarloLoading} className="w-full">
+                    {monteCarloLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        正在运行...
+                      </>
+                    ) : (
+                      '运行蒙特卡洛模拟'
+                    )}
+                  </Button>
+                  {monteCarloResult && !monteCarloLoading && (
+                    <MonteCarloChart result={monteCarloResult} />
+                  )}
+                </div>
+              )}
+
+              {!advancedTab && (
+                <div className="text-center py-8 text-muted-foreground">
+                  点击上方按钮选择高级分析功能
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

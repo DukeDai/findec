@@ -83,9 +83,13 @@ export function Navigation() {
             </div>
           </div>
 
-          {/* Right side: Learning mode + Mobile menu */}
           <div className="flex items-center gap-2">
-            {/* Learning Mode Toggle */}
+            {learningMode && (
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full transition-colors bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                📚 学习模式
+              </div>
+            )}
+
             <button
               onClick={() => setLearningMode(!learningMode)}
               className={cn(
