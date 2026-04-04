@@ -448,6 +448,14 @@ export function PortfolioBacktestRunner() {
   }, [])
 
   useEffect(() => {
+    if (!selectedPlan && plans.length > 0) {
+      const completed = plans.find(p => p.status === 'completed')
+      const pending = plans.find(p => p.status === 'pending')
+      setSelectedPlan(completed || pending || plans[0])
+    }
+  }, [plans, selectedPlan])
+
+  useEffect(() => {
     if (selectedPlan?.status === 'completed') {
       loadReport(selectedPlan.id)
     } else {
@@ -640,7 +648,7 @@ export function PortfolioBacktestRunner() {
         </Card>
       )}
 
-      {plans.length > 0 && (
+      {plans.length > 0 ? (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">回测计划</CardTitle>
@@ -715,36 +723,89 @@ export function PortfolioBacktestRunner() {
             </div>
           </CardContent>
         </Card>
+      ) : (
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center text-muted-foreground">
+              <p className="mb-4">还没有回测计划</p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                {PRESET_PORTFOLIOS.slice(0, 2).map((p) => (
+                  <Button
+                    key={p.id}
+                    variant="outline"
+                    onClick={() => {
+                      setFormData({
+                        name: p.name,
+                        symbols: p.symbols.join(','),
+                        initialCapital: '100000',
+                        strategy: 'ma_crossover',
+                        rebalance: 'monthly',
+                        rebalanceThreshold: '5',
+                        startDate: '2024-01-01',
+                        endDate: '2024-12-31',
+                      })
+                      setShowCreateForm(true)
+                    }}
+                  >
+                    创建「{p.name}」演示
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {report && selectedPlan && (
+      {selectedPlan && (
         <div className="space-y-4">
-          <RiskMetricsCard
-            metrics={report.summary}
-            period={{ start: new Date(selectedPlan.startDate), end: new Date(selectedPlan.endDate) }}
-          />
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">收益曲线</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <BacktestChart
-                equityCurve={report.equityCurve.map(p => ({ date: new Date(p.date), value: p.value }))}
-                trades={report.trades}
-                height={400}
+          {report ? (
+            <>
+              <RiskMetricsCard
+                metrics={report.summary}
+                period={{ start: new Date(selectedPlan.startDate), end: new Date(selectedPlan.endDate) }}
               />
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">交易日志</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TradeLog trades={report.trades} pageSize={50} />
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">收益曲线</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <BacktestChart
+                    equityCurve={report.equityCurve.map(p => ({ date: new Date(p.date), value: p.value }))}
+                    trades={report.trades}
+                    height={400}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">交易日志</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <TradeLog trades={report.trades} pageSize={50} />
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              {selectedPlan.status === 'pending' ? (
+                <div className="text-center">
+                  <p className="mb-2">此回测计划尚未执行</p>
+                  <Button onClick={() => executeBacktest(selectedPlan.id)} disabled={executing}>
+                    {executing ? '执行中...' : '立即执行'}
+                  </Button>
+                </div>
+              ) : selectedPlan.status === 'running' ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>回测运行中，请稍候...</span>
+                </div>
+              ) : (
+                <p>报告加载中...</p>
+              )}
+            </div>
+          )}
 
           <Card>
             <CardHeader>
@@ -788,8 +849,8 @@ export function PortfolioBacktestRunner() {
                       strategyType={selectedPlan.strategies[0].type}
                       defaultParams={selectedPlan.strategies[0].parameters || {}}
                       paramRanges={getParamRanges(selectedPlan.strategies[0].type)}
-                      onParamsChange={(params) => console.log('Params changed:', params)}
-                      onRun={(params) => {
+                      onParamsChange={() => {}}
+                      onRun={() => {
                         const searchParams = Object.entries(getParamRanges(selectedPlan.strategies[0].type)).map(([key, range]) => ({
                           paramName: key,
                           start: range.min,
