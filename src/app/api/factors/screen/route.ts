@@ -1,33 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getHistoricalData, YahooFinanceError } from '@/lib/yahoo-finance'
-import { calculateIndicators } from '@/lib/indicators'
+import { getHistoricalData } from '@/lib/yahoo-finance'
+import { FactorLibrary } from '@/lib/factors/factor-library'
+import { ScreeningEngine, ScreeningStrategy, ScreeningRule } from '@/lib/factors/screening-engine'
 
-function evaluateRule(field: string, operator: string, value: number, indicatorValues: number[]): boolean {
-  const latestValue = indicatorValues[indicatorValues.length - 1]
-  if (latestValue === undefined) return false
+const factorLibrary = new FactorLibrary()
+const screeningEngine = new ScreeningEngine(factorLibrary)
 
-  switch (operator) {
-    case '>':
-      return latestValue > value
-    case '<':
-      return latestValue < value
-    case '>=':
-      return latestValue >= value
-    case '<=':
-      return latestValue <= value
-    case '==':
-      return latestValue === value
-    case 'between':
-      return latestValue >= value && latestValue <= value
-    default:
-      return false
+function generateMockData() {
+  const data = []
+  let basePrice = 150
+  const now = new Date()
+
+  for (let i = 365; i >= 0; i--) {
+    const date = new Date(now)
+    date.setDate(date.getDate() - i)
+    basePrice = basePrice * (1 + (Math.random() - 0.48) * 0.02)
+
+    data.push({
+      date,
+      open: basePrice * (1 + (Math.random() - 0.5) * 0.01),
+      high: basePrice * (1 + Math.random() * 0.02),
+      low: basePrice * (1 - Math.random() * 0.02),
+      close: basePrice,
+      volume: Math.floor(Math.random() * 10000000),
+    })
   }
+
+  return data
 }
 
-function calculateScore(rules: any[], matchedRules: number): number {
-  const totalWeight = rules.reduce((sum: number, r: any) => sum + (r.weight || 1), 0)
-  return (matchedRules / rules.length) * 100
+function mapDbRulesToScreeningRules(dbRules: any[]): ScreeningRule[] {
+  return dbRules.map(rule => ({
+    factorId: rule.field,
+    operator: rule.operator as ScreeningRule['operator'],
+    value: rule.value,
+    weight: rule.weight || 1.0,
+  }))
 }
 
 export async function POST(request: NextRequest) {
@@ -54,78 +63,53 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const results = []
+    const screeningStrategy: ScreeningStrategy = {
+      id: strategy.id,
+      name: strategy.name,
+      rules: mapDbRulesToScreeningRules(strategy.rules),
+      scoringMethod: 'weighted_sum',
+    }
 
-    for (const symbol of symbols) {
-      try {
-        let data
+    const results = await screeningEngine.screen(
+      screeningStrategy,
+      symbols,
+      async (symbol: string) => {
         try {
-          data = await getHistoricalData(symbol, '1y')
+          const data = await getHistoricalData(symbol, '1y')
+          return { data, symbol }
         } catch (error) {
           console.warn(`Yahoo Finance failed for ${symbol}, using mock data`)
-          data = generateMockData()
+          return { data: generateMockData(), symbol }
         }
-
-        if (!data || data.length === 0) {
-          continue
-        }
-
-        const indicatorOptions = {
-          ma: [20, 50],
-          rsi: 14,
-        }
-
-        const indicators = calculateIndicators(data, indicatorOptions)
-        let matchedRules = 0
-
-        for (const rule of strategy.rules) {
-          let indicatorValues: number[] = []
-
-          if (rule.field.startsWith('ma')) {
-            const period = parseInt(rule.field.replace('ma', ''))
-            const maKey = `ma${period}` as keyof typeof indicators
-            if (indicators[maKey] && 'values' in indicators[maKey]) {
-              indicatorValues = (indicators[maKey] as any).values || []
-            }
-          } else if (rule.field === 'rsi' && indicators.rsi) {
-            indicatorValues = indicators.rsi.values || []
-          } else if (rule.field === 'price') {
-            indicatorValues = data.map(d => d.close)
-          }
-
-          if (indicatorValues.length > 0) {
-            if (evaluateRule(rule.field, rule.operator, rule.value, indicatorValues)) {
-              matchedRules++
-            }
-          }
-        }
-
-        const score = strategy.rules.length > 0 
-          ? calculateScore(strategy.rules, matchedRules) 
-          : 0
-
-        const screeningResult = await prisma.screeningResult.create({
-          data: {
-            strategyId,
-            symbol,
-            score,
-            details: JSON.stringify({ matchedRules, totalRules: strategy.rules.length }),
-          },
-        })
-
-        results.push({
-          ...screeningResult,
-          symbol,
-          score: Math.round(score * 100) / 100,
-        })
-      } catch (error) {
-        console.error(`Error screening ${symbol}:`, error)
       }
+    )
+
+    const savedResults = []
+    for (const result of results) {
+      const screeningResult = await prisma.screeningResult.create({
+        data: {
+          strategyId,
+          symbol: result.symbol,
+          score: result.score,
+          details: JSON.stringify({
+            matchedRules: result.matchedRules,
+            totalRules: result.totalRules,
+            rank: result.rank,
+            factorValues: Object.fromEntries(result.factorValues),
+          }),
+        },
+      })
+      savedResults.push({
+        ...screeningResult,
+        symbol: result.symbol,
+        score: Math.round(result.score * 100) / 100,
+        rank: result.rank,
+      })
     }
 
     return NextResponse.json({
       strategyId,
-      results: results.sort((a, b) => b.score - a.score),
+      results: savedResults.sort((a, b) => b.score - a.score),
     })
   } catch (error) {
     console.error('Error running screening:', error)
@@ -134,27 +118,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
-
-function generateMockData() {
-  const data = []
-  let basePrice = 150
-  const now = new Date()
-
-  for (let i = 365; i >= 0; i--) {
-    const date = new Date(now)
-    date.setDate(date.getDate() - i)
-    basePrice = basePrice * (1 + (Math.random() - 0.48) * 0.02)
-
-    data.push({
-      date,
-      open: basePrice * (1 + (Math.random() - 0.5) * 0.01),
-      high: basePrice * (1 + Math.random() * 0.02),
-      low: basePrice * (1 - Math.random() * 0.02),
-      close: basePrice,
-      volume: Math.floor(Math.random() * 10000000),
-    })
-  }
-
-  return data
 }
