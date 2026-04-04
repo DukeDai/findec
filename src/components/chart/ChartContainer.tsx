@@ -179,7 +179,10 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
     if (!chartRef.current || data.length === 0) return;
 
     const closes = data.map((d) => d.close);
-    const dates = data.map((d) => d.date);
+    const dates = data.map((d) => {
+      const date = new Date(d.date);
+      return Math.floor(date.getTime() / 1000) as unknown as LineData['time'];
+    });
 
     switch (key) {
       case "ma5":
@@ -227,10 +230,13 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
 
       case "rsi": {
         const rsiValues = RSI.calculate({ period: 14, values: closes });
-        const rsiData: LineData[] = rsiValues.map((value, i) => ({
-          time: dates[i + 14],
-          value,
-        }));
+        const rsiData: LineData[] = rsiValues
+          .map((value, i) => {
+            const idx = i + 14;
+            if (idx >= dates.length) return null;
+            return { time: dates[idx], value };
+          })
+          .filter((d): d is LineData => d !== null);
 
         const series = chartRef.current.addSeries(LineSeries, {
           color: INDICATOR_COLORS.rsi,
@@ -275,19 +281,31 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
         });
 
         const offset = 26 + 9 - 2;
-        const macdData: LineData[] = macdResult.map((m, i) => ({
-          time: dates[i + offset],
-          value: m.MACD ?? 0,
-        }));
-        const signalData: LineData[] = macdResult.map((m, i) => ({
-          time: dates[i + offset],
-          value: m.signal ?? 0,
-        }));
-        const histogramData = macdResult.map((m, i) => ({
-          time: dates[i + offset],
-          value: m.histogram ?? 0,
-          color: m.histogram && m.histogram >= 0 ? "#22c55e" : "#ef4444",
-        }));
+        const macdData: LineData[] = macdResult
+          .map((m, i) => {
+            const idx = i + offset;
+            if (idx >= dates.length) return null;
+            return { time: dates[idx], value: m.MACD ?? 0 };
+          })
+          .filter((d): d is LineData => d !== null);
+        const signalData: LineData[] = macdResult
+          .map((m, i) => {
+            const idx = i + offset;
+            if (idx >= dates.length) return null;
+            return { time: dates[idx], value: m.signal ?? 0 };
+          })
+          .filter((d): d is LineData => d !== null);
+        const histogramData = macdResult
+          .map((m, i) => {
+            const idx = i + offset;
+            if (idx >= dates.length) return null;
+            return {
+              time: dates[idx],
+              value: m.histogram ?? 0,
+              color: m.histogram && m.histogram >= 0 ? "#22c55e" : "#ef4444",
+            };
+          })
+          .filter((d): d is LineData & { color: string } => d !== null);
 
         const macdSeries = chartRef.current.addSeries(LineSeries, {
           color: INDICATOR_COLORS.macd,
