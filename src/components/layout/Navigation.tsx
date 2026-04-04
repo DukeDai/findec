@@ -1,5 +1,5 @@
 "use client"
-import { useState } from 'react'
+import { useState, createContext, useContext } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -16,6 +16,31 @@ const mainNav: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', description: '快速查看股票' },
   { label: '量化分析', href: '/analysis', description: '因子选股、回测、监控' },
 ]
+
+// Context for learning mode (so child components can access)
+interface LearningModeContextType {
+  learningMode: boolean
+  setLearningMode: (value: boolean) => void
+}
+
+export const LearningModeContext = createContext<LearningModeContextType>({
+  learningMode: false,
+  setLearningMode: () => {},
+})
+
+export function LearningModeProvider({ children }: { children: React.ReactNode }) {
+  const [learningMode, setLearningMode] = useState(false)
+  
+  return (
+    <LearningModeContext.Provider value={{ learningMode, setLearningMode }}>
+      {children}
+    </LearningModeContext.Provider>
+  )
+}
+
+export function useLearningMode() {
+  return useContext(LearningModeContext)
+}
 
 export function Navigation() {
   const pathname = usePathname()
@@ -137,31 +162,4 @@ export function Navigation() {
       </nav>
     </header>
   )
-}
-
-// Context for learning mode (so child components can access)
-import { createContext, useContext } from 'react'
-
-interface LearningModeContextType {
-  learningMode: boolean
-  setLearningMode: (value: boolean) => void
-}
-
-export const LearningModeContext = createContext<LearningModeContextType>({
-  learningMode: false,
-  setLearningMode: () => {},
-})
-
-export function LearningModeProvider({ children }: { children: React.ReactNode }) {
-  const [learningMode, setLearningMode] = useState(false)
-  
-  return (
-    <LearningModeContext.Provider value={{ learningMode, setLearningMode }}>
-      {children}
-    </LearningModeContext.Provider>
-  )
-}
-
-export function useLearningMode() {
-  return useContext(LearningModeContext)
 }
