@@ -1,35 +1,32 @@
 "use client"
 import Link from 'next/link'
-import { ChevronRight, Home } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 
-interface BreadcrumbItem {
-  label: string
-  href?: string
+const PAGE_NAMES: Record<string, string> = {
+  '/': 'K线图',
+  '/dashboard': 'Dashboard',
+  '/analysis': '量化分析',
 }
 
-interface BreadcrumbProps {
-  items: BreadcrumbItem[]
-}
-
-export function Breadcrumb({ items }: BreadcrumbProps) {
+export function PageHeader() {
+  const pathname = usePathname()
+  
+  const pageName = PAGE_NAMES[pathname] || 
+    (pathname.startsWith('/chart/') ? pathname.split('/')[2]?.toUpperCase() : null)
+  
+  if (!pageName) return null
+  
   return (
-    <nav className="flex items-center gap-1 text-sm text-muted-foreground">
-      <Link href="/" className="hover:text-foreground">
-        <Home className="w-4 h-4" />
-      </Link>
-
-      {items.map((item, index) => (
-        <span key={index} className="flex items-center gap-1">
-          <ChevronRight className="w-4 h-4" />
-          {item.href ? (
-            <Link href={item.href} className="hover:text-foreground">
-              {item.label}
-            </Link>
-          ) : (
-            <span className="text-foreground font-medium">{item.label}</span>
-          )}
-        </span>
-      ))}
-    </nav>
+    <div className="mb-6">
+      <h1 className="text-2xl font-bold text-foreground">
+        {pageName}
+      </h1>
+      <p className="text-sm text-muted-foreground mt-1">
+        {pathname === '/' && '查看股票K线和技术指标'}
+        {pathname === '/dashboard' && '快速查看股票信息和实时报价'}
+        {pathname === '/analysis' && '因子选股、回测系统、组合分析'}
+        {pathname.startsWith('/chart/') && 'K线图分析'}
+      </p>
+    </div>
   )
 }
