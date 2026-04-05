@@ -5,8 +5,11 @@ import { Button } from '@/components/ui/button'
 import { CostModelPanel } from './CostModelPanel'
 import { QuickStrategyCards, BacktestForm, BacktestResult } from './backtest'
 import { ExportPanel } from './ExportPanel'
+import { StrategyBattle } from './StrategyBattle'
+import { VersionHistory } from '@/components/strategy-editor/VersionHistory'
 import type { CostModelConfig } from '@/lib/backtest/cost-model'
 import { DEFAULT_COST_MODEL } from '@/lib/backtest/cost-model'
+import { Swords } from 'lucide-react'
 
 interface BacktestPlan {
   id: string
@@ -130,6 +133,7 @@ export function BacktestRunner() {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [showConfigForm, setShowConfigForm] = useState(false)
   const [costModelConfig, setCostModelConfig] = useState<CostModelConfig>(DEFAULT_COST_MODEL)
+  const [showStrategyBattle, setShowStrategyBattle] = useState(false)
 
   const loadPlans = async () => {
     try {
@@ -222,6 +226,32 @@ export function BacktestRunner() {
       setTrades(data.trades || [])
       setEquityCurve(data.equityCurve || [])
       setShowConfigForm(false)
+
+      // Create a version after successful backtest execution
+      if (selectedPlan?.id) {
+        try {
+          await fetch(`/api/backtests/${selectedPlan.id}/versions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: `${data.name} - 执行完成`,
+              note: `回测执行完成，总收益: ${(data.totalReturn || 0).toFixed(2)}%`,
+              config: {
+                strategy: config.strategy,
+                parameters: params,
+                costModel: costModelConfig,
+                result: {
+                  totalReturn: data.totalReturn,
+                  sharpeRatio: data.sharpeRatio,
+                  maxDrawdown: data.maxDrawdown,
+                },
+              },
+            }),
+          })
+        } catch {
+          console.error('Failed to create backtest version')
+        }
+      }
     } catch (error) {
       console.error('Failed to run backtest:', error)
     } finally {
@@ -278,18 +308,47 @@ export function BacktestRunner() {
         onQuickBacktest={quickBacktest}
       />
 
-      <div className="border-t pt-6 space-y-4">
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={loadPlans}>
-            加载回测
-          </Button>
-          <Button onClick={() => setShowCreateForm(true)}>新建回测</Button>
-          {selectedPlan && (
-            <Button onClick={() => setShowConfigForm(true)} variant="secondary">
-              配置策略
+        <div className="border-t pt-6 space-y-4">
+          <div className="flex gap-2 items-center">
+            <Button variant="outline" onClick={loadPlans}>
+              加载回测
             </Button>
-          )}
-        </div>
+            <Button onClick={() => setShowCreateForm(true)}>新建回测</Button>
+            <Button
+              variant="secondary"
+              onClick={() => setShowStrategyBattle(true)}
+              className="flex items-center gap-1"
+            >
+              <Swords className="w-4 h-4" />
+              策略 Battle
+            </Button>
+            {selectedPlan && (
+              <>
+                <Button onClick={() => setShowConfigForm(true)} variant="secondary">
+                  配置策略
+                </Button>
+                <div className="ml-auto">
+                  <VersionHistory
+                    entityId={selectedPlan.id}
+                    entityType="backtest"
+                    currentData={{
+                      name: selectedPlan.name,
+                      config: {
+                        symbols: selectedPlan.symbols,
+                        startDate: selectedPlan.startDate,
+                        endDate: selectedPlan.endDate,
+                        initialCapital: selectedPlan.initialCapital,
+                        totalReturn: selectedPlan.totalReturn,
+                        sharpeRatio: selectedPlan.sharpeRatio,
+                        maxDrawdown: selectedPlan.maxDrawdown,
+                      },
+                    }}
+                    onRestore={loadPlans}
+                  />
+                </div>
+              </>
+            )}
+          </div>
 
         <BacktestForm
           strategies={STRATEGIES}
@@ -344,6 +403,12 @@ export function BacktestRunner() {
           conceptDefinitions={CONCEPT_DEFINITIONS}
           onSelectPlan={setSelectedPlan}
           onLoadTrades={loadTrades}
+        />
+
+        <StrategyBattle
+          visible={showStrategyBattle}
+          onClose={() => setShowStrategyBattle(false)}
+          backtestPlans={plans}
         />
       </div>
     </div>

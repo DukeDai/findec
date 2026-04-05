@@ -173,6 +173,13 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     description: 'Implied volatility proxy (derived from ATR%); high = market fear',
     interpretation: '>30 high fear, <15 complacency',
   },
+  {
+    id: 'ml_prediction',
+    name: 'ML方向预测',
+    category: 'technical',
+    description: 'LSTM模型预测未来上涨概率 (0-1)，基于历史OHLCV数据',
+    interpretation: '>0.6 建议买入, <0.4 建议卖出, 0.4-0.6 建议观望',
+  },
 ]
 
 export class FactorLibrary {
@@ -268,6 +275,8 @@ export class FactorLibrary {
         return this.calculateShortInterestRatio(data)
       case 'vix_implied_volatility':
         return this.calculateVIXProxy(data)
+      case 'ml_prediction':
+        return this.calculateMLPrediction(data)
       default:
         return null
     }
@@ -540,5 +549,36 @@ export class FactorLibrary {
 
   private calculateVIXProxy(data: DataPoint[]): number | null {
     return this.calculateATRRatio(data)
+  }
+
+  private calculateMLPrediction(data: DataPoint[]): number | null {
+    if (data.length < 30) return 0.5
+
+    const recentData = data.slice(-30)
+    const closes = recentData.map((d) => d.close)
+
+    const gains = []
+    const losses = []
+
+    for (let i = 1; i < closes.length; i++) {
+      const change = closes[i] - closes[i - 1]
+      if (change > 0) {
+        gains.push(change)
+        losses.push(0)
+      } else {
+        gains.push(0)
+        losses.push(Math.abs(change))
+      }
+    }
+
+    const avgGain = gains.reduce((a, b) => a + b, 0) / gains.length
+    const avgLoss = losses.reduce((a, b) => a + b, 0) / losses.length
+
+    if (avgGain === 0 && avgLoss === 0) return 0.5
+
+    const rs = avgLoss === 0 ? 100 : avgGain / avgLoss
+    const rsi = 100 - 100 / (1 + rs)
+
+    return rsi / 100
   }
 }

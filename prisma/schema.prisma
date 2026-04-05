@@ -72,18 +72,35 @@ model ScreeningResult {
 }
 
 model BacktestPlan {
-  id            String          @id @default(uuid())
-  name          String
-  symbols       String
-  startDate     DateTime
-  endDate       DateTime
+  id             String            @id @default(uuid())
+  name           String
+  symbols        String
+  startDate      DateTime
+  endDate        DateTime
   initialCapital Float
-  trades        BacktestTrade[]
-  totalReturn   Float?
-  sharpeRatio   Float?
-  maxDrawdown  Float?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  trades         BacktestTrade[]
+  totalReturn    Float?
+  sharpeRatio    Float?
+  maxDrawdown    Float?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  versions       BacktestVersion[]
+}
+
+// Git-style version history for BacktestPlan
+model BacktestVersion {
+  id          String       @id @default(uuid())
+  backtestId  String
+  version     Int
+  name        String
+  config      Json         // snapshot of BacktestPlan config
+  createdAt   DateTime     @default(now())
+  note        String?
+
+  backtest    BacktestPlan @relation(fields: [backtestId], references: [id], onDelete: Cascade)
+
+  @@unique([backtestId, version])
+  @@index([backtestId])
 }
 
 model BacktestTrade {
@@ -259,13 +276,33 @@ model StockNameCache {
 
 // Custom user-defined trading strategies
 model CustomStrategy {
-  id          String   @id @default(uuid())
+  id          String           @id @default(uuid())
   name        String
   description String?
-  rules       Json     // Serialized rule tree
-  actions     Json     // Serialized action config
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  rules       Json             // Serialized rule tree
+  actions     Json             // Serialized action config
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  versions    StrategyVersion[]
+}
+
+// Git-style version history for CustomStrategy
+model StrategyVersion {
+  id          String         @id @default(uuid())
+  strategyId  String
+  version     Int
+  name        String
+  description String?
+  config      Json           // snapshot of CustomStrategy.config
+  rules       Json           // snapshot of rules array
+  actions     Json           // snapshot of actions config
+  createdAt   DateTime       @default(now())
+  note        String?        // optional commit message
+
+  strategy    CustomStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@unique([strategyId, version])
+  @@index([strategyId])
 }
 
 // ── Paper Trading ──
