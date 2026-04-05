@@ -63,6 +63,7 @@
 | 回撤热力图 (回撤面积图，含最大/平均/当前回撤统计) | `src/components/analysis/DrawdownHeatmap.tsx` | ✅ |
 | 回测 API 路由 (创建/执行/montecarlo/walkforward/report) | `src/app/api/backtests/**/*.ts` | ✅ |
 | 事件驱动回测（EventSignalEngine、支持财报/FOMC/CPI/分红除权事件信号注入、事件日历） | `src/lib/backtest/event-signal-engine.ts`, `src/app/api/backtests/event-driven/route.ts` | ✅ |
+| 批量回测并行化（Worker Threads + Promise.all 数据并发获取，默认 4 并发） | `src/lib/backtest/batch-worker.ts`, `src/lib/backtest/batch-runner.ts`, `/api/backtests/batch` | ✅ |
 
 ### 5. 模拟交易 (Paper Trading)
 
@@ -148,15 +149,6 @@
 ---
 
 ## 二、功能缺口与待办
-
-### 🟡 中优先级
-
-- [ ] **因子 PCA / 降维分析** — 主成分分析识别冗余因子
-- [ ] **事件驱动回测** — 财报发布、宏观事件对股价影响的建模
-- [ ] **组合因子暴露度分析** — Barra 风格因子暴露计算
-- [ ] **批量回测并行化** — Worker Threads 或任务队列并行执行多股票回测
-- [ ] **PDF 回测报告自动生成** — 已有 CSV/HTML 基础，扩展 PDF 格式
-- [ ] **组合回测 UI 增强** — 完整的 `PortfolioBacktestRunner` UI，已有部分组件
 
 ### 🟢 低优先级
 
