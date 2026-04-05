@@ -2,6 +2,7 @@
 import { useState, createContext, useContext } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { BookOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface NavItem {
@@ -85,6 +86,19 @@ export function Navigation() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Link
+              href="/manual"
+              className={cn(
+                "hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-colors",
+                pathname === '/manual'
+                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+              )}
+              title="用户使用手册"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>手册</span>
+            </Link>
             <button
               onClick={() => setLearningMode(!learningMode)}
               className={cn(
@@ -138,6 +152,20 @@ export function Navigation() {
                 </Link>
               ))}
               
+              <Link
+                href="/manual"
+                onClick={() => setMobileMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-md transition-colors",
+                  pathname === '/manual'
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+              >
+                <BookOpen className="w-4 h-4" />
+                <span>使用手册</span>
+              </Link>
+
               {/* Mobile learning mode */}
               <button
                 onClick={() => {
