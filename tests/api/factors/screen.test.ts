@@ -41,27 +41,31 @@ vi.mock('@/lib/yahoo-finance', () => ({
 }))
 
 vi.mock('@/lib/factors/factor-library', () => ({
-  FactorLibrary: vi.fn().mockImplementation(() => ({
-    calculateFactors: vi.fn().mockReturnValue([
-      { factorId: 'pe_ratio', value: 18, symbol: 'AAPL', date: new Date() },
-      { factorId: 'roe', value: 20, symbol: 'AAPL', date: new Date() },
-    ]),
-  })),
+  FactorLibrary: vi.fn().mockImplementation(function() {
+    return {
+      calculateFactors: vi.fn().mockReturnValue([
+        { factorId: 'pe_ratio', value: 18, symbol: 'AAPL', date: new Date() },
+        { factorId: 'roe', value: 20, symbol: 'AAPL', date: new Date() },
+      ]),
+    }
+  }),
 }))
 
 vi.mock('@/lib/factors/screening-engine', () => ({
-  ScreeningEngine: vi.fn().mockImplementation(() => ({
-    screen: vi.fn().mockResolvedValue([
-      {
-        symbol: 'AAPL',
-        score: 85.5,
-        matchedRules: 2,
-        totalRules: 2,
-        factorValues: new Map([['pe_ratio', 18], ['roe', 20]]),
-        rank: 1,
-      },
-    ]),
-  })),
+  ScreeningEngine: vi.fn().mockImplementation(function() {
+    return {
+      screen: vi.fn().mockResolvedValue([
+        {
+          symbol: 'AAPL',
+          score: 85.5,
+          matchedRules: 2,
+          totalRules: 2,
+          factorValues: new Map([['pe_ratio', 18], ['roe', 20]]),
+          rank: 1,
+        },
+      ]),
+    }
+  }),
   ScreeningStrategy: {},
   ScreeningRule: {},
 }))
@@ -147,7 +151,7 @@ describe('Factors Screen API', () => {
       const response = await POST(request as unknown as NextRequest)
       expect(response.status).toBe(400)
       const data = await response.json()
-      expect(data.error).toBe('strategyId and symbols array are required')
+      expect(data.error).toContain('Invalid scoringMethod')
     })
 
     it('should return 404 when strategy not found', async () => {

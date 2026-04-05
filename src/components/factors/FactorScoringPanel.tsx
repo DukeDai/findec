@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
-import { ChevronDown, ChevronUp, Calculator, BarChart3, Layers, Target, RotateCcw } from 'lucide-react'
+import { ChevronDown, ChevronUp, Calculator, BarChart3, Layers, Target, RotateCcw, Brain } from 'lucide-react'
 
 export type ScoringMethod = 'weighted_sum' | 'rank_sum' | 'threshold_count'
 
@@ -47,7 +48,8 @@ interface FactorScoringPanelProps {
   initialWeights?: FactorWeight[]
   onMethodChange?: (method: ScoringMethod) => void
   onWeightsChange?: (weights: FactorWeight[]) => void
-  onScoringChange?: (config: { method: ScoringMethod; weights: FactorWeight[] }) => void
+  onScoringChange?: (config: { method: ScoringMethod; weights: FactorWeight[]; enableML: boolean }) => void
+  onMLToggle?: (enabled: boolean) => void
   className?: string
   defaultExpanded?: boolean
 }
@@ -58,16 +60,18 @@ export function FactorScoringPanel({
   onMethodChange,
   onWeightsChange,
   onScoringChange,
+  onMLToggle,
   className,
   defaultExpanded = true,
 }: FactorScoringPanelProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
   const [selectedMethod, setSelectedMethod] = useState<ScoringMethod>(initialMethod)
   const [weights, setWeights] = useState<FactorWeight[]>(initialWeights)
+  const [enableML, setEnableML] = useState(false)
 
   useEffect(() => {
-    onScoringChange?.({ method: selectedMethod, weights })
-  }, [selectedMethod, weights, onScoringChange])
+    onScoringChange?.({ method: selectedMethod, weights, enableML })
+  }, [selectedMethod, weights, enableML, onScoringChange])
 
   const handleMethodChange = useCallback((method: ScoringMethod) => {
     setSelectedMethod(method)
@@ -84,6 +88,11 @@ export function FactorScoringPanel({
       return newWeights
     })
   }, [onWeightsChange])
+
+  const handleMLToggle = useCallback((checked: boolean) => {
+    setEnableML(checked)
+    onMLToggle?.(checked)
+  }, [onMLToggle])
 
   const normalizeWeights = useCallback(() => {
     const totalWeight = weights.reduce((sum, w) => sum + w.weight, 0)
@@ -198,6 +207,22 @@ export function FactorScoringPanel({
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-lg bg-purple-50 border border-purple-200">
+            <div className="flex items-center gap-3">
+              <Brain className="w-5 h-5 text-purple-500" />
+              <div>
+                <div className="font-medium text-sm">启用 ML 预测因子</div>
+                <div className="text-xs text-muted-foreground">
+                  使用LSTM神经网络预测价格方向
+                </div>
+              </div>
+            </div>
+            <Switch
+              checked={enableML}
+              onCheckedChange={handleMLToggle}
+            />
           </div>
 
           {selectedMethod === 'weighted_sum' && weights.length > 0 && (
