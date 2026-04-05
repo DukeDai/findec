@@ -267,3 +267,42 @@ model CustomStrategy {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// ── Paper Trading ──
+model PaperAccount {
+  id             String         @id @default(uuid())
+  name           String
+  initialCash    Float
+  cash           Float
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  positions      PaperPosition[]
+  orders         PaperOrder[]
+}
+
+model PaperPosition {
+  id          String      @id @default(uuid())
+  account     PaperAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId   String
+  symbol      String
+  quantity    Float
+  avgCost     Float
+  currentPrice Float     @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model PaperOrder {
+  id        String      @id @default(uuid())
+  account   PaperAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId String
+  symbol    String
+  side      String      // 'BUY' | 'SELL'
+  type      String      // 'MARKET' | 'LIMIT'
+  price     Float?      // null for MARKET orders
+  quantity  Float
+  status    String      @default("PENDING") // 'PENDING' | 'FILLED' | 'CANCELLED'
+  filledAt  DateTime?
+  filledPrice Float?
+  createdAt DateTime   @default(now())
+}

@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, FileText, Table2 } from 'lucide-react'
+import { Download, FileText, FileType, Table2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { exportBacktestCSV, exportBacktestHTML, exportStrategyCSV, type BacktestReportData } from '@/lib/export/exportUtils'
+import { exportBacktestCSV, exportBacktestHTML, exportBacktestPDF, exportStrategyCSV, type BacktestReportData } from '@/lib/export/exportUtils'
 
 interface ExportPanelProps {
   strategyName?: string
@@ -25,6 +25,12 @@ export function ExportPanel({ strategyName, backtestData, strategyRules }: Expor
   const handleHTML = async () => {
     if (backtestData) {
       exportBacktestHTML(backtestData)
+    }
+  }
+
+  const handlePDF = async () => {
+    if (backtestData) {
+      exportBacktestPDF(backtestData)
     }
   }
 
@@ -69,7 +75,18 @@ export function ExportPanel({ strategyName, backtestData, strategyRules }: Expor
               )}
             >
               <FileText className="h-3.5 w-3.5" />
-              {loading === 'html' ? '生成中...' : '导出 PDF (打印)'}
+              {loading === 'html' ? '生成中...' : '导出 HTML'}
+            </button>
+            <button
+              onClick={handlePDF}
+              disabled={loading === 'pdf'}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-md hover:bg-muted transition-colors bg-primary text-primary-foreground hover:bg-primary/90',
+                loading === 'pdf' && 'opacity-50'
+              )}
+            >
+              <FileType className="h-3.5 w-3.5" />
+              {loading === 'pdf' ? '生成中...' : '导出 PDF'}
             </button>
           </>
         )}
@@ -86,7 +103,7 @@ export function ExportPanel({ strategyName, backtestData, strategyRules }: Expor
 
       {hasBacktestData && (
         <p className="text-xs text-muted-foreground">
-          CSV 包含交易记录、月度收益和核心指标。HTML 可通过浏览器打印功能保存为 PDF。
+          CSV 包含交易记录、月度收益和核心指标。PDF 按钮将生成专业分页报告，请在浏览器打印对话框中选择「另存为 PDF」。
         </p>
       )}
     </div>

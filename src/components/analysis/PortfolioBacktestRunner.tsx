@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
 import { PlanList } from './portfolio-backtest/PlanList'
 import { CreateForm, FormData, StrategyParams } from './portfolio-backtest/CreateForm'
 import { ReportPanel } from './portfolio-backtest/ReportPanel'
 import { AdvancedPanel, AdvancedTabType } from './portfolio-backtest/AdvancedPanel'
+import { BatchBacktestModal } from './BatchBacktestModal'
 import {
   BacktestPlan,
   BacktestReport,
@@ -24,6 +26,7 @@ export function PortfolioBacktestRunner() {
   const [executing, setExecuting] = useState(false)
   const [createFormInitialData, setCreateFormInitialData] = useState<{ name: string; symbols: string } | null>(null)
   const [benchmark, setBenchmark] = useState<'SPY' | 'QQQ' | undefined>(undefined)
+  const [showBatchModal, setShowBatchModal] = useState(false)
 
   const [advancedTab, setAdvancedTab] = useState<AdvancedTabType>(null)
   const [optimizationResults, setOptimizationResults] = useState<OptimizationResult[] | null>(null)
@@ -262,6 +265,8 @@ export function PortfolioBacktestRunner() {
         initialData={createFormInitialData}
       />
 
+      <BatchBacktestModal visible={showBatchModal} onClose={() => setShowBatchModal(false)} />
+
       <div className="flex items-center gap-4 p-3 rounded-lg border bg-card">
         <span className="text-sm text-muted-foreground">基准对比:</span>
         <div className="flex gap-2">
@@ -296,6 +301,9 @@ export function PortfolioBacktestRunner() {
             QQQ (纳斯达克100)
           </button>
         </div>
+        <Button variant="outline" onClick={() => setShowBatchModal(true)}>
+          批量回测
+        </Button>
       </div>
 
       <PlanList

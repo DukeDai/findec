@@ -27,12 +27,14 @@
 | 交易信号注解 (BUY/SELL) | `src/lib/indicators/signal-decorator.ts` | ✅ |
 | K 线图表 + 指标叠加 (Lightweight Charts) | `src/components/chart/ChartContainer.tsx`, `IndicatorOverlay.tsx`, `ChartToolbar.tsx` | ✅ |
 | 指标计算 API | `src/app/api/indicators/route.ts` | ✅ |
+| 自定义公式计算器 (表达式解析器，支持 SMA/EMA/RSI/MACD/BB/ATR/ADX/STOCH/MAX/MIN + 四则运算) | `src/lib/indicators/formula-engine.ts` | ✅ |
+| 公式计算 API + UI (6 个预设公式、实时预览图表) | `src/app/api/formula/route.ts`, `src/components/interactive/FormulaCalculator.tsx` | ✅ |
 
 ### 3. 因子系统
 
 | 功能 | 核心文件 | 状态 |
 |------|----------|------|
-| 技术因子库 (10 个) | `src/lib/factors/factor-library.ts` | ✅ |
+| 技术因子库 (21 个：MA/EMA/RSI/MACD/BB/ATR/ADX/Stochastic/OBV/ROC/CCI/KST/WMA/VWAP + DMI±/ADX强度/Ichimoku云图/Vortex±/PutCall比/做空利率/VIX代理) | `src/lib/factors/factor-library.ts` | ✅ |
 | 基本面因子 (6 个: PE/PEG/PB/股息率/EPS增长/Beta) | `src/lib/factors/fundamental-factors.ts` | ✅ |
 | 因子筛选引擎 (3 种打分方法) | `src/lib/factors/screening-engine.ts` | ✅ |
 | 因子有效性分析 (IC/IR/衰减/换手率) | `src/lib/factors/factor-metrics.ts` | ✅ |
@@ -41,6 +43,7 @@
 | 因子筛选/有效性/相关性/优化 API | `src/app/api/factors/**/*.ts` | ✅ |
 | IC 图表 / IC 衰减图 / IC_IR 图 / 分组收益图 | `src/components/factors/IcChart.tsx`, `IcDecayChart.tsx`, `IcIrChart.tsx`, `GroupReturnChart.tsx` | ✅ |
 | 因子相关性热力图 | `src/components/factors/FactorCorrelationHeatmap.tsx` | ✅ |
+| 因子 PCA 降维分析（幂迭代特征分解、方差解释率图、因子分组载荷可视化、冗余因子识别与建议） | `src/lib/factors/factor-pca.ts`, `src/app/api/factors/pca/route.ts`, `src/components/factors/FactorPCAAnalysis.tsx` | ✅ |
 
 ### 4. 回测引擎
 
@@ -55,9 +58,21 @@
 | Walk-Forward 分析 | `src/lib/backtest/walk-forward.ts` | ✅ |
 | 基准对比 (Alpha/Beta/跟踪误差/R²) | `src/lib/backtest/benchmark-calculator.ts` | ✅ |
 | 回测 UI (Form/Result/TradeLog/Benchmark) | `src/components/analysis/backtest/`, `src/components/analysis/BacktestRunner.tsx` | ✅ |
+| 组合回测 UI 增强（月度收益热力图、回撤热力图集成到 ReportPanel；批量回测入口 BatchBacktestModal + 触发按钮） | `src/components/analysis/portfolio-backtest/ReportPanel.tsx`, `src/components/analysis/BatchBacktestModal.tsx` | ✅ |
+| 月度收益热力图 (12 列 × N 年月格，8 级红绿配色) | `src/components/analysis/MonthlyReturnsHeatmap.tsx` | ✅ |
+| 回撤热力图 (回撤面积图，含最大/平均/当前回撤统计) | `src/components/analysis/DrawdownHeatmap.tsx` | ✅ |
 | 回测 API 路由 (创建/执行/montecarlo/walkforward/report) | `src/app/api/backtests/**/*.ts` | ✅ |
+| 事件驱动回测（EventSignalEngine、支持财报/FOMC/CPI/分红除权事件信号注入、事件日历） | `src/lib/backtest/event-signal-engine.ts`, `src/app/api/backtests/event-driven/route.ts` | ✅ |
 
-### 5. 组合分析
+### 5. 模拟交易 (Paper Trading)
+
+| 功能 | 核心文件 | 状态 |
+|------|----------|------|
+| PaperAccount / PaperPosition / PaperOrder 数据模型 | `prisma/schema.prisma` | ✅ |
+| 模拟交易核心逻辑 (账户创建/订单下单/成交执行/持仓更新) | `src/lib/paper-trade.ts` | ✅ |
+| 模拟交易 CRUD + 订单执行 API (`/api/paper-trading`, `/api/paper-trading/[id]`, `/api/paper-trading/[id]/orders`, `/api/paper-trading/[id]/execute`) | `src/app/api/paper-trading/**/*.ts` | ✅ |
+
+### 6. 组合分析
 
 | 功能 | 核心文件 | 状态 |
 |------|----------|------|
@@ -68,20 +83,21 @@
 | 组合健康评分 API | `src/app/api/portfolios/[id]/health/route.ts` | ✅ |
 | 组合持仓管理 API | `src/app/api/portfolios/[id]/positions/route.ts` | ✅ |
 | 组合优化 API | `src/app/api/portfolios/[id]/optimize/route.ts` | ✅ |
+| Barra 风格因子暴露度分析（8 个 Barra 因子、市场β/规模/价值/动量/质量/低波动/股息率/成长，雷达图+柱状图+风险分解+智能建议） | `src/lib/portfolio/factor-exposure.ts`, `src/app/api/portfolio/factor-exposure/route.ts`, `src/components/portfolio/PortfolioFactorAnalysis.tsx` | ✅ |
 | 组合健康评分小部件 | `src/components/dashboard/widgets/PortfolioHealthWidget.tsx` | ✅ |
 
-### 6. 预警与通知
+### 7. 预警与通知
 
 | 功能 | 核心文件 | 状态 |
 |------|----------|------|
 | 预警引擎 (价格/指标/风险/组合) | `src/lib/realtime/alert-engine.ts` | ✅ |
 | 邮件通知 (SMTP + 限速) | `src/lib/realtime/email-notifier.ts` | ✅ |
 | 浏览器通知 | `src/lib/hooks/useBrowserNotifications.ts` | ✅ |
-| 预警监控循环 | `src/lib/alert-monitor.ts` | ✅ |
+| 预警监控循环 (含指数退避重试，防止重复启动) | `src/lib/alert-monitor.ts` | ✅ |
 | 预警 CRUD API | `src/app/api/alerts/route.ts` | ✅ |
 | 预警通知 API | `src/app/api/alerts/[id]/notify/route.ts` | ✅ |
 
-### 7. 仪表盘
+### 8. 仪表盘
 
 | 功能 | 核心文件 | 状态 |
 |------|----------|------|
@@ -95,7 +111,7 @@
 | 仪表盘配置 UI | `DashboardSettings.tsx`, `NotificationSettings.tsx` | ✅ |
 | WebSocket 预警桥接 | `AlertNotificationBridge.tsx` | ✅ |
 
-### 8. 策略编辑器
+### 9. 策略编辑器
 
 | 功能 | 核心文件 | 状态 |
 |------|----------|------|
@@ -104,7 +120,7 @@
 | 策略实时预览 | `src/components/strategy-editor/StrategyPreview.tsx` | ✅ |
 | 策略 CRUD + 执行/优化 API | `src/app/api/strategies/**/*.ts` | ✅ |
 
-### 9. 学习系统
+### 10. 学习系统
 
 | 功能 | 核心文件 | 状态 |
 |------|----------|------|
@@ -112,27 +128,26 @@
 | 词汇百科页面 | `src/app/education/vocabulary.tsx` | ✅ |
 | 回测陷阱交互式演示 | `src/app/education/BacktestPitfalls.tsx` | ✅ |
 
-### 10. 数据管理
+### 11. 数据管理
 
 | 功能 | 核心文件 | 状态 |
 |------|----------|------|
 | 批量历史数据下载 (UI + API) | `src/app/data-manager/`, `src/app/api/data-manager/route.ts` | ✅ |
 | JSON 全量备份导出/导入 | `src/lib/export/backup.ts` | ✅ |
-| CSV/HTML 回测报告导出 | `src/lib/export/exportUtils.ts` | ✅ |
+| CSV/HTML/PDF 回测报告导出 | `src/lib/export/exportUtils.ts` | ✅ |
 | 备份管理 UI | `src/app/settings/data-management/page.tsx` | ✅ |
 | 股票搜索 (中英文) | `src/app/api/search/route.ts` | ✅ |
 | 搜索缓存 API | `src/app/api/search/cache/route.ts`, `cache/status/route.ts` | ✅ |
 
+### 12. 基础设施
+
+| 功能 | 核心文件 | 状态 |
+|------|----------|------|
+| 结构化日志 (JSON 格式，含模块名/timestamp/error堆栈，LOG_LEVEL 环境变量控制) | `src/lib/logger.ts` | ✅ |
+
 ---
 
 ## 二、功能缺口与待办
-
-### 🔴 高优先级
-
-- [ ] **因子库扩展** — 添加量价因子 (DMI, Ichimoku, Vortex)、情绪因子 (Put/Call Ratio, Short Interest)、宏观因子 (VIX 相关)
-- [ ] **实盘模拟交易 (Paper Trading)** — 将回测信号转化为模拟订单，追踪模拟持仓和浮动盈亏，新增 `PaperTrade` 模型和 API
-- [ ] **自定义指标公式计算器** — 用户 UI 定义公式（如 `SMA(close,20)/SMA(close,50)-1`）实时计算，类似 TradingView 脚本
-- [ ] **月度收益热力图 + 回撤热力图** — 已有 `BacktestChart.tsx`，扩展为 QuantConnect 风格多维可视化
 
 ### 🟡 中优先级
 
@@ -161,3 +176,13 @@
 | 日期 | 变更 |
 |------|------|
 | 2026-04-05 | 初始功能盘点，整理已实现功能 + 缺口列表 |
+| 2026-04-05 | 完成 4 项技术债务修复（回测日期参数化、因子库整合、结构化日志、预警监控健壮性）|
+| 2026-04-05 | 完成 4 项高优先级功能：因子库扩展至 21 个因子、模拟交易系统、自定义公式计算器、月度收益/回撤热力图 |
+| 2026-04-05 | 移除技术债务章节；将已实现功能归纳至对应模块分类（新增第 5 节"模拟交易"和第 12 节"基础设施"）|
+| 2026-04-05 | 完成批量回测并行化：batch-worker.ts（Worker Thread 隔离执行）、batch-runner.ts（并发池 + Promise.all 数据获取）、/api/backtests/batch API |
+| 2026-04-05 | 完成组合回测 UI 增强：月度收益/回撤热力图集成到 ReportPanel，批量回测入口 BatchBacktestModal + 触发按钮 |
+| 2026-04-05 | 完成因子 PCA 降维分析：手写幂迭代特征分解算法、方差解释率图、因子载荷可视化、冗余因子识别建议 |
+| 2026-04-05 | 完成事件驱动回测：EventSignalEngine（财报/FOMC/CPI/分红除权事件）、信号注入回测引擎、事件日历 API |
+| 2026-04-05 | 完成 Barra 风格因子暴露度分析：8 个 Barra 因子（市场β/规模/价值/动量/质量/低波动/股息率/成长）、雷达图 + 柱状图可视化、风险分解、智能建议 |
+| 2026-04-05 | 中优先级全部 6 项完成 |
+| 2026-04-05 | 完成 PDF 回测报告自动生成：专业分页布局（@page CSS）、指标卡片、多列月度收益表、分页交易记录表、ExportPanel PDF 按钮

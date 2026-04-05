@@ -6,6 +6,8 @@ import { BacktestChart } from '../BacktestChart'
 import { RiskMetricsCard } from '../RiskMetricsCard'
 import { BenchmarkMetricsCard } from '../BenchmarkMetricsCard'
 import { TradeLog } from '../TradeLog'
+import { MonthlyReturnsHeatmap } from '../MonthlyReturnsHeatmap'
+import { DrawdownHeatmap } from '../DrawdownHeatmap'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -77,11 +79,13 @@ export function ReportPanel({
       />
 
       <Tabs defaultValue="chart">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="chart">收益曲线</TabsTrigger>
           <TabsTrigger value="benchmark" disabled={!hasBenchmark}>
             基准对比 {hasBenchmark ? `(${report.benchmark || 'SPY'})` : ''}
           </TabsTrigger>
+          <TabsTrigger value="monthly">月度收益</TabsTrigger>
+          <TabsTrigger value="drawdown">回撤分析</TabsTrigger>
         </TabsList>
 
         <TabsContent value="chart">
@@ -128,6 +132,28 @@ export function ReportPanel({
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="monthly">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">月度收益热力图</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <MonthlyReturnsHeatmap equityCurve={equityCurveData} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="drawdown">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">回撤分析热力图</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DrawdownHeatmap equityCurve={equityCurveData} />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
