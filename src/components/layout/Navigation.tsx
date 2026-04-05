@@ -61,7 +61,7 @@ export function Navigation() {
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2">
               <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Findec
+                FinDec
               </span>
             </Link>
 
@@ -85,12 +85,6 @@ export function Navigation() {
           </div>
 
           <div className="flex items-center gap-2">
-            {learningMode && (
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full transition-colors bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
-                📚 学习模式
-              </div>
-            )}
-
             <button
               onClick={() => setLearningMode(!learningMode)}
               className={cn(
