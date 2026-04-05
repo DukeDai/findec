@@ -145,7 +145,9 @@ export function executeBacktest(
   let maShort: number[] = []
   let maLong: number[] = []
   let rsiValues: number[] = []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let macdValues: any[] = []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let bollingerValues: any[] = []
   let momentumValues: number[] = []
 

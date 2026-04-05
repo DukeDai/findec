@@ -18,12 +18,7 @@ import { cn } from '@/lib/utils'
 import {
   Trophy,
   TrendingUp,
-  TrendingDown,
   Activity,
-  Target,
-  Zap,
-  AlertTriangle,
-  Percent,
   ChevronRight,
   Swords,
 } from 'lucide-react'
@@ -390,7 +385,7 @@ export function StrategyBattle({
       { metric: 'Alpha', max: 100 },
     ].map((item) => {
       const dataPoint: Record<string, number | string> = { metric: item.metric }
-      metrics.forEach((m, idx) => {
+      metrics.forEach((m, _idx) => {
         const value =
           item.metric === '总收益' ? Math.max(0, m.totalReturn) :
           item.metric === '夏普比率' ? Math.max(0, m.sharpeRatio * 20) :

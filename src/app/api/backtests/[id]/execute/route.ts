@@ -3,6 +3,15 @@ import { prisma } from '@/lib/prisma'
 import { executeBacktest, BacktestConfig } from '@/lib/backtest-engine'
 import { HistoricalPrice } from '@/lib/indicators'
 
+type TradeRecord = {
+  planId: string
+  symbol: string
+  type: string
+  quantity: number
+  price: number
+  date: string | Date
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -25,7 +34,7 @@ export async function POST(
     const startDate = new Date(backtest.startDate)
     const endDate = new Date(backtest.endDate)
 
-    let allTrades: any[] = []
+    let allTrades: TradeRecord[] = []
     let totalReturn = 0
     let sharpeRatio = 0
     let maxDrawdown = 0
@@ -47,7 +56,7 @@ export async function POST(
         continue
       }
 
-      const prices: HistoricalPrice[] = data.data.map((d: any) => ({
+      const prices: HistoricalPrice[] = (data.data as { date: string; open: number; high: number; low: number; close: number; volume: number }[]).map((d) => ({
         date: new Date(d.date),
         open: d.open,
         high: d.high,

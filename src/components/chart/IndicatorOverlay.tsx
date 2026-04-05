@@ -63,6 +63,7 @@ export function IndicatorOverlay({
       date.setDate(date.getDate() - (rsiValues.length - i))
       dateList.push(date.toISOString().split('T')[0])
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDates(dateList)
   }, [indicators])
 

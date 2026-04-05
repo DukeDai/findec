@@ -1,4 +1,4 @@
-import { FactorLibrary, FactorValue } from './factor-library'
+import { FactorLibrary, FactorValue, DataPoint } from './factor-library'
 import { createLogger } from '@/lib/logger'
 
 const logger = createLogger('screening-engine')
@@ -36,7 +36,7 @@ export class ScreeningEngine {
   async screen(
     strategy: ScreeningStrategy,
     symbols: string[],
-    getData: (symbol: string) => Promise<{ data: any[]; symbol: string }>
+    getData: (symbol: string) => Promise<{ data: DataPoint[]; symbol: string }>
   ): Promise<ScreeningResult[]> {
     const results: ScreeningResult[] = []
 
@@ -65,7 +65,7 @@ export class ScreeningEngine {
     return results
   }
 
-  private calculateFactorValues(data: any[], symbol: string): Map<string, number> {
+  private calculateFactorValues(data: DataPoint[], symbol: string): Map<string, number> {
     const values = new Map<string, number>()
     const allFactors = this.factorLibrary.calculateFactors(data, symbol)
 

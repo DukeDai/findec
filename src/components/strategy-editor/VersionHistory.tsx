@@ -31,8 +31,6 @@ import {
   History,
   RotateCcw,
   GitCompare,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -101,6 +99,7 @@ export function VersionHistory({
     if (isDialogOpen) {
       loadVersions()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDialogOpen])
 
   const createVersion = async () => {

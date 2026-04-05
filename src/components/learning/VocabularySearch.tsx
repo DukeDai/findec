@@ -18,7 +18,10 @@ export function VocabularySearch() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(FAVORITES_KEY)
-      if (stored) setFavorites(JSON.parse(stored))
+      if (stored) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setFavorites(JSON.parse(stored))
+      }
     } catch {}
   }, [])
 

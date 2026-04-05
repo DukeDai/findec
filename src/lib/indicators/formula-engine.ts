@@ -165,7 +165,7 @@ function buildAST(tokens: string[]): unknown {
       if (!match) return { type: 'func', name: tok, args: [] }
       const name = match[1]
       const inner = match[2]
-      let args: unknown[] = []
+      const args: unknown[] = []
       if (inner.trim()) {
         const argTokens = tokenize(inner)
         let depth = 0, start = 0

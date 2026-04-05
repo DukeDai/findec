@@ -34,7 +34,7 @@ export class WalkForwardAnalyzer {
     const trainResults: BacktestResult[] = []
     const testResults: BacktestResult[] = []
 
-    let trainStart = new Date(startDate)
+    const trainStart = new Date(startDate)
 
     while (true) {
       const trainEnd = new Date(trainStart)

@@ -77,8 +77,8 @@ interface ComparisonResponse {
   }
 }
 
-// Helper to parse equity curve from various formats
-function parseEquityCurve(data: unknown): EquityCurvePoint[] {
+// Helper to parse equity curve from various formats (reserved for future use)
+function _parseEquityCurve(data: unknown): EquityCurvePoint[] {
   if (!data) return []
   if (typeof data === 'string') {
     try {
@@ -310,7 +310,7 @@ async function calculateBenchmarkMetrics(
     const portfolioMean = portfolioSlice.reduce((sum, r) => sum + r, 0) / n
     const benchmarkMean = benchmarkSlice.reduce((sum, r) => sum + r, 0) / n
 
-    const portfolioStd = Math.sqrt(
+    const _portfolioStd = Math.sqrt(
       portfolioSlice.reduce((sum, r) => sum + Math.pow(r - portfolioMean, 2), 0) / n
     )
     const benchmarkStd = Math.sqrt(

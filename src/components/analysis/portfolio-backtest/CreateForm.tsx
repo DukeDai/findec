@@ -68,6 +68,7 @@ export function CreateForm({ visible, onClose, onSubmit, initialData }: CreateFo
 
   useLayoutEffect(() => {
     if (initialData) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData(prev => ({
         ...prev,
         ...initialData,

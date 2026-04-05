@@ -38,11 +38,11 @@ export async function POST(request: NextRequest) {
         name,
         description,
         rules: rules ? {
-          create: rules.map((rule: any) => ({
+          create: rules.map((rule: { field: string; operator: string; value: unknown; weight?: number }) => ({
             field: rule.field,
             operator: rule.operator,
             value: rule.value,
-            weight: rule.weight || 1.0,
+            weight: rule.weight ?? 1.0,
           })),
         } : undefined,
       },

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { cn } from '@/lib/utils'
-import { getTerm, type VocabEntry } from '@/lib/learning/vocabulary'
+import { getTerm } from '@/lib/learning/vocabulary'
 
 interface TermTooltipProps {
   termId: string
@@ -16,8 +16,6 @@ export function TermTooltip({ termId, children, className }: TermTooltipProps) {
   const triggerRef = useRef<HTMLSpanElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
   const entry = getTerm(termId)
-
-  if (!entry) return <span className={className}>{children}</span>
 
   const showTooltip = useCallback(() => {
     if (!triggerRef.current || !tooltipRef.current) return
@@ -47,6 +45,8 @@ export function TermTooltip({ termId, children, className }: TermTooltipProps) {
     left: 'left-full top-1/2 -translate-y-1/2 border-l-foreground border-y-transparent border-r-transparent',
     right: 'right-full top-1/2 -translate-y-1/2 border-r-foreground border-y-transparent border-l-transparent',
   }
+
+  if (!entry) return <span className={className}>{children}</span>
 
   return (
     <span

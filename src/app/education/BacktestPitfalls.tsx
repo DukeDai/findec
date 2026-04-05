@@ -103,7 +103,7 @@ function OverfittingDemo() {
       <div>
         <h3 className="text-lg font-semibold mb-2">过拟合 (Overfitting)</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          当策略参数过多时，策略会"记住"训练数据的噪音而非学习真正的规律。在测试集上表现会大幅下降。
+          当策略参数过多时，策略会&quot;记住&quot;训练数据的噪音而非学习真正的规律。在测试集上表现会大幅下降。
         </p>
       </div>
 
@@ -190,7 +190,7 @@ function LookAheadBiasDemo() {
         <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3">
           <p className="text-xs text-muted-foreground mb-1">错误信号 (有偏差)</p>
           <p className="text-sm font-medium text-red-600">使用了未来数据</p>
-          <p className="text-xs text-muted-foreground mt-1">在第20天就"看到"了第30天的价格</p>
+          <p className="text-xs text-muted-foreground mt-1">在第20天就&quot;看到&quot;了第30天的价格</p>
         </div>
         <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3">
           <p className="text-xs text-muted-foreground mb-1">正确信号 (无偏差)</p>
@@ -229,7 +229,7 @@ function SurvivorshipBiasDemo() {
       <div>
         <h3 className="text-lg font-semibold mb-2">生存者偏差 (Survivorship Bias)</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          只看"存活"的历史股票会高估策略收益，因为退市股票(大部分亏损)被排除在外。
+          只看&quot;存活&quot;的历史股票会高估策略收益，因为退市股票(大部分亏损)被排除在外。
         </p>
       </div>
 
@@ -268,7 +268,7 @@ function SurvivorshipBiasDemo() {
 
       <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
         <p className="text-sm text-amber-800 dark:text-amber-200">
-          <strong>学习要点：</strong>回测应使用"生存者偏差-free"数据，即包含已退市股票的历史数据。可从彭博、万得等数据商获取。
+          <strong>学习要点：</strong>回测应使用&quot;生存者偏差-free&quot;数据，即包含已退市股票的历史数据。可从彭博、万得等数据商获取。
         </p>
       </div>
     </div>

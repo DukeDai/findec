@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
-  MLPricePredictor,
   PredictionResult,
   getPricePredictor,
 } from '@/lib/ml/price-predictor'

@@ -75,7 +75,7 @@ async function fetchTrainingData(
   return results
 }
 
-function generateMockData(symbol: string): HistoricalDataPoint[] {
+function generateMockData(_symbol: string): HistoricalDataPoint[] {
   const data: HistoricalDataPoint[] = []
   let basePrice = 100 + Math.random() * 100
   const now = new Date()

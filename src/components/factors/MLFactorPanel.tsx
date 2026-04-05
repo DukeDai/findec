@@ -122,6 +122,7 @@ export function MLFactorPanel({ symbol, className }: MLFactorPanelProps) {
     if (symbol) {
       fetchPrediction()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbol])
 
   return (

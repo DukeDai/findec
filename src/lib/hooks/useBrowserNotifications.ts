@@ -25,6 +25,7 @@ export function useBrowserNotifications() {
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsSupported(false)
       return
     }

@@ -7,6 +7,7 @@ export interface Widget {
   id: string
   name: string
   description: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   component: React.ComponentType<any>
   defaultVisible: boolean
   defaultOrder: number

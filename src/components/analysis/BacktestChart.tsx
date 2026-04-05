@@ -129,6 +129,7 @@ export function BacktestChart({
     }
 
     const ddInfo = maxDD > 0 ? { start: ddStart, end: ddEnd, value: maxDD * 100 } : null
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMaxDrawdown(ddInfo)
 
     chartRef.current.timeScale().fitContent()

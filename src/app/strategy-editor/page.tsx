@@ -12,7 +12,7 @@ import {
   StrategyAction,
 } from '@/components/strategy-editor'
 import { VersionHistory } from '@/components/strategy-editor/VersionHistory'
-import { Plus, Save, Trash2, Edit2, ChevronLeft, AlertCircle, History } from 'lucide-react'
+import { Plus, Save, Trash2, Edit2, ChevronLeft, AlertCircle } from 'lucide-react'
 
 interface CustomStrategy {
   id: string
@@ -44,7 +44,6 @@ export default function StrategyEditorPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
 
   const [name, setName] = useState('')

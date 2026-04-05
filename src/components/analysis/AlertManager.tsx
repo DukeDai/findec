@@ -266,7 +266,7 @@ export function AlertManager() {
       <div className="space-y-2">
         {alerts.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">
-            暂无预警，点击"新建预警"添加
+            暂无预警，点击&quot;新建预警&quot;添加
           </div>
         ) : (
           alerts.map((alert) => (
