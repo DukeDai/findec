@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { CostModelPanel } from './CostModelPanel'
 import { QuickStrategyCards, BacktestForm, BacktestResult } from './backtest'
+import { ExportPanel } from './ExportPanel'
 import type { CostModelConfig } from '@/lib/backtest/cost-model'
 import { DEFAULT_COST_MODEL } from '@/lib/backtest/cost-model'
 
@@ -307,6 +308,33 @@ export function BacktestRunner() {
           onChange={setCostModelConfig}
           estimatedTradeValue={selectedPlan ? selectedPlan.initialCapital * 0.01 : 10000}
         />
+
+        {selectedPlan && (
+          <ExportPanel
+            strategyName={selectedPlan.name}
+            backtestData={{
+              strategyName: selectedPlan.name,
+              backtestPeriod: { start: selectedPlan.startDate, end: selectedPlan.endDate },
+              metrics: {
+                totalReturn: selectedPlan.totalReturn ?? 0,
+                sharpeRatio: selectedPlan.sharpeRatio ?? 0,
+                maxDrawdown: selectedPlan.maxDrawdown ?? 0,
+                winRate: 0,
+                totalTrades: trades.length,
+                avgHoldingDays: 0,
+              },
+              monthlyReturns: [],
+              trades: trades.map(t => ({
+                date: t.date,
+                symbol: t.symbol,
+                type: t.type,
+                price: t.price,
+                quantity: t.quantity,
+                pnl: 0,
+              })),
+            }}
+          />
+        )}
 
         <BacktestResult
           selectedPlan={selectedPlan}
