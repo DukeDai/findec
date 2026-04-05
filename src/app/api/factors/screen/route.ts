@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getHistoricalData } from '@/lib/yahoo-finance'
 import { FactorLibrary } from '@/lib/factors/factor-library'
 import { ScreeningEngine, ScreeningStrategy, ScreeningRule } from '@/lib/factors/screening-engine'
+import type { Prisma } from '@prisma/client'
 
 const factorLibrary = new FactorLibrary()
 const screeningEngine = new ScreeningEngine(factorLibrary)
@@ -30,7 +31,7 @@ function generateMockData() {
   return data
 }
 
-function mapDbRulesToScreeningRules(dbRules: any[]): ScreeningRule[] {
+function mapDbRulesToScreeningRules(dbRules: Prisma.FactorRuleGetPayload<object>[]): ScreeningRule[] {
   return dbRules.map(rule => ({
     factorId: rule.field,
     operator: rule.operator as ScreeningRule['operator'],
@@ -42,11 +43,18 @@ function mapDbRulesToScreeningRules(dbRules: any[]): ScreeningRule[] {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { strategyId, symbols } = body
+    const { strategyId, symbols, scoringMethod = 'weighted_sum' } = body
 
     if (!strategyId || !symbols || !Array.isArray(symbols)) {
       return NextResponse.json(
         { error: 'strategyId and symbols array are required' },
+        { status: 400 }
+      )
+    }
+
+    if (!['weighted_sum', 'rank_sum', 'threshold_count'].includes(scoringMethod)) {
+      return NextResponse.json(
+        { error: 'Invalid scoringMethod. Must be weighted_sum, rank_sum, or threshold_count' },
         { status: 400 }
       )
     }
@@ -67,7 +75,7 @@ export async function POST(request: NextRequest) {
       id: strategy.id,
       name: strategy.name,
       rules: mapDbRulesToScreeningRules(strategy.rules),
-      scoringMethod: 'weighted_sum',
+      scoringMethod: scoringMethod as 'weighted_sum' | 'rank_sum' | 'threshold_count',
     }
 
     const results = await screeningEngine.screen(
