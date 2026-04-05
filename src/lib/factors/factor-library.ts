@@ -6,13 +6,15 @@ import {
   Stochastic,
 } from 'technicalindicators'
 import { HistoricalPrice } from '@/lib/indicators'
+import { FUNDAMENTAL_FACTORS, calculateFundamentalFactors } from './fundamental-factors'
+import type { FundamentalData } from '@/lib/data/fundamental-data'
 
 export interface FactorDefinition {
   id: string
   name: string
   category: 'technical' | 'fundamental' | 'sentiment'
   description: string
-  interpretation: string
+  interpretation?: string
 }
 
 export interface FactorValue {
@@ -104,7 +106,7 @@ export class FactorLibrary {
 
   constructor() {
     this.factors = new Map()
-    TECHNICAL_FACTORS.forEach(factor => {
+    ;[...TECHNICAL_FACTORS, ...FUNDAMENTAL_FACTORS].forEach(factor => {
       this.factors.set(factor.id, factor)
     })
   }
@@ -175,6 +177,30 @@ export class FactorLibrary {
       default:
         return null
     }
+  }
+
+  calculateFactorsWithFundamentals(
+    priceData: DataPoint[],
+    fundamentalData: FundamentalData,
+    symbol: string = '',
+    date: Date = new Date()
+  ): FactorValue[] {
+    const technical = this.calculateFactors(priceData, symbol, date)
+    const fundamentalValues = calculateFundamentalFactors(fundamentalData)
+    const now = new Date()
+
+    for (const [id, value] of Object.entries(fundamentalValues)) {
+      if (value !== 0) {
+        technical.push({
+          factorId: id,
+          symbol,
+          date: now,
+          value,
+        })
+      }
+    }
+
+    return technical
   }
 
   private calculateMAPosition(closes: number[], period: number): number | null {

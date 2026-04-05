@@ -1,4 +1,7 @@
 import nodemailer from 'nodemailer'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('email-notifier')
 
 const RATE_LIMIT_MS = 60 * 60 * 1000
 
@@ -60,12 +63,12 @@ export function getTimeUntilNextEmail(alertId: string): number {
 export async function sendAlertEmail(alert: AlertEmail): Promise<boolean> {
   if (alert.alertId && !canSendEmail(alert.alertId)) {
     const minutesLeft = Math.ceil(getTimeUntilNextEmail(alert.alertId) / (60 * 1000))
-    console.warn(`Rate limited: Email for alert ${alert.alertId} can be sent in ${minutesLeft} minutes`)
+    logger.warn('Email rate limited', { alertId: alert.alertId, minutesLeft })
     return false
   }
 
   if (!process.env.SMTP_USER || !process.env.SMTP_FROM) {
-    console.warn('Email not configured: SMTP_USER or SMTP_FROM not set')
+    logger.warn('Email not configured', { missing: 'SMTP_USER or SMTP_FROM' })
     return false
   }
 
@@ -99,7 +102,7 @@ FinDec 价格预警通知
 ${alert.targetUrl ? `查看详情: ${alert.targetUrl}` : ''}
 
 此邮件由 FinDec 美股量化分析平台自动发送
-  `
+  `.trim()
 
   try {
     const transporter = getTransporter()
@@ -110,22 +113,28 @@ ${alert.targetUrl ? `查看详情: ${alert.targetUrl}` : ''}
       text,
       html,
     })
-
-    if (alert.alertId) {
-      recordEmailSent(alert.alertId)
-    }
-
-    console.log(`Alert email sent successfully to ${alert.to} for ${alert.symbol}`)
+    logger.info('Alert email sent', { to: alert.to, symbol: alert.symbol })
     return true
   } catch (error) {
-    console.error('Failed to send alert email:', error)
+    logger.error('Failed to send alert email', error)
     return false
   }
 }
 
+function getAlertTypeName(type: string): string {
+  const typeNames: Record<string, string> = {
+    price: '价格预警',
+    indicator: '指标预警',
+    factor: '因子预警',
+    risk: '风险预警',
+    portfolio: '组合预警',
+  }
+  return typeNames[type] || type
+}
+
 export async function sendTestEmail(to: string): Promise<boolean> {
   if (!process.env.SMTP_USER || !process.env.SMTP_FROM) {
-    console.warn('Email not configured: SMTP_USER or SMTP_FROM not set')
+    logger.warn('Email not configured for test email', { missing: 'SMTP_USER or SMTP_FROM' })
     return false
   }
 
@@ -153,21 +162,10 @@ export async function sendTestEmail(to: string): Promise<boolean> {
       text: '这是一封测试邮件，用于验证您的邮件配置是否正确。如果您收到此邮件，说明邮件服务配置成功！',
       html,
     })
-    console.log(`Test email sent successfully to ${to}`)
+    logger.info('Test email sent', { to })
     return true
   } catch (error) {
-    console.error('Failed to send test email:', error)
+    logger.error('Failed to send test email', error)
     return false
   }
-}
-
-function getAlertTypeName(type: string): string {
-  const typeNames: Record<string, string> = {
-    price: '价格预警',
-    indicator: '指标预警',
-    factor: '因子预警',
-    risk: '风险预警',
-    portfolio: '组合预警',
-  }
-  return typeNames[type] || type
 }

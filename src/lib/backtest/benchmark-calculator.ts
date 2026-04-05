@@ -1,4 +1,7 @@
 import { defaultDataSource, DataPoint } from '@/lib/data/data-source'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('benchmark-calculator')
 
 export interface BenchmarkResult {
   benchmarkReturn: number
@@ -149,7 +152,7 @@ export async function calculateBenchmarkMetrics(
       })),
     }
   } catch (error) {
-    console.error('Error calculating benchmark metrics:', error)
+    logger.error('Error calculating benchmark metrics', error)
     return null
   }
 }

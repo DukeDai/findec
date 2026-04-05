@@ -155,14 +155,6 @@
 
 ---
 
-## 三、技术债务
-
-- [ ] 回测引擎日期窗口硬编码 (`startDate = 2020-01-01`)，应参数化
-- [ ] 基本面因子与主因子库尚未完全融合（`fundamental-factors.ts` 独立于 `factor-library.ts` 的 `TECHNICAL_FACTORS`）
-- [ ] 多处 `console.error` 缺少结构化日志
-- [ ] 预警监控循环 (`alert-monitor.ts`) 的错误处理和重试机制
-
----
 
 ## Changelog
 

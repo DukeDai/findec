@@ -3,6 +3,9 @@ import type { HistoricalPrice } from '@/lib/indicators'
 import { CostModel, TradeCost } from './cost-model'
 import { PositionManager, PortfolioState, Trade } from './position-manager'
 import { RiskMetricsCalculator, EquityPoint, RiskMetrics } from './risk-metrics'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('backtest-engine')
 
 export interface StrategyConfig {
   symbol: string
@@ -72,8 +75,12 @@ export class PortfolioBacktestEngine {
     const equityCurve: EquityPoint[] = []
 
     const symbolData: Map<string, HistoricalPrice[]> = new Map()
-    const startDate = new Date('2020-01-01')
-    const endDate = new Date()
+    const startDate = config.startDate
+      ? new Date(config.startDate)
+      : new Date('2020-01-01')
+    const endDate = config.endDate
+      ? new Date(config.endDate)
+      : new Date()
 
     for (const symbol of config.symbols) {
       const data = await this.dataSource.fetchData(symbol, startDate, endDate)

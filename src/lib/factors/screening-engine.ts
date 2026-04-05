@@ -1,4 +1,7 @@
 import { FactorLibrary, FactorValue } from './factor-library'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('screening-engine')
 
 export interface ScreeningRule {
   factorId: string
@@ -49,7 +52,7 @@ export class ScreeningEngine {
           results.push(scoredResult)
         }
       } catch (error) {
-        console.error(`Error screening ${symbol}:`, error)
+        logger.error(`Error screening ${symbol}`, error)
       }
     }
 

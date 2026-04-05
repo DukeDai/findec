@@ -2,6 +2,9 @@ import type { Server as SocketIOServer } from 'socket.io'
 import { randomUUID } from 'crypto'
 import { sendAlertEmail, canSendEmail } from '@/lib/realtime/email-notifier'
 import { prisma } from '@/lib/prisma'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('alert-engine')
 
 export interface AlertCondition {
   id: string
@@ -54,13 +57,13 @@ export class AlertEngine {
   // Register a new alert condition
   registerAlert(condition: AlertCondition): void {
     this.activeAlerts.set(condition.id, condition)
-    console.log(`Alert registered: ${condition.id} (${condition.type} - ${condition.metric})`)
+    logger.info('Alert registered', { alertId: condition.id, type: condition.type, metric: condition.metric })
   }
 
   // Remove alert
   unregisterAlert(alertId: string): void {
     this.activeAlerts.delete(alertId)
-    console.log(`Alert unregistered: ${alertId}`)
+    logger.info('Alert unregistered', { alertId })
   }
 
   // Check alerts against current data
@@ -272,7 +275,7 @@ export class AlertEngine {
         message: event.message,
         triggeredAt: event.triggeredAt.toISOString(),
       })
-      console.log(`Alert broadcast: ${event.message}`)
+      logger.info('Alert broadcast', { alertId: event.alertId, message: event.message, severity: event.condition.severity })
     }
 
     this.sendEmailNotification(event).catch(() => {})
@@ -335,7 +338,7 @@ export class AlertEngine {
     this.activeAlerts.clear()
     this.alertHistory.clear()
     this.lastValues.clear()
-    console.log('Alert engine cleared')
+    logger.info('Alert engine cleared')
   }
 
   // Export alerts configuration

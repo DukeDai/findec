@@ -3,6 +3,9 @@ import { createServer } from 'http'
 import { createAlertEngine } from '@/lib/realtime/alert-engine'
 import { RiskMonitor, getDefaultThresholds, EquityPoint, PortfolioState } from '@/lib/portfolio/risk-monitor'
 import { prisma } from '@/lib/prisma'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('websocket-server')
 
 const httpServer = createServer()
 const io = new Server(httpServer, {
@@ -24,30 +27,30 @@ interface ClientInfo {
 const clients = new Map<string, ClientInfo>()
 
 io.on('connection', (socket) => {
-  console.log(`Client connected: ${socket.id}`)
+  logger.info('Client connected', { socketId: socket.id })
 
   socket.on('subscribe', (data: { symbols: string[] }) => {
     clients.set(socket.id, { symbols: data.symbols || [] })
-    console.log(`Client ${socket.id} subscribed to: ${data.symbols?.join(', ')}`)
+    logger.info('Client subscribed', { socketId: socket.id, symbols: data.symbols })
   })
 
   socket.on('subscribe-alert', (data: { alertId: string }) => {
     const client = clients.get(socket.id) || { symbols: [] }
     client.alertId = data.alertId
     clients.set(socket.id, client)
-    console.log(`Client ${socket.id} subscribed to alert: ${data.alertId}`)
+    logger.info('Client subscribed to alert', { socketId: socket.id, alertId: data.alertId })
   })
 
   socket.on('subscribe-portfolio', (data: { portfolioId: string }) => {
     const client = clients.get(socket.id) || { symbols: [] }
     client.portfolioId = data.portfolioId
     clients.set(socket.id, client)
-    console.log(`Client ${socket.id} subscribed to portfolio: ${data.portfolioId}`)
+    logger.info('Client subscribed to portfolio', { socketId: socket.id, portfolioId: data.portfolioId })
   })
 
   socket.on('disconnect', () => {
     clients.delete(socket.id)
-    console.log(`Client disconnected: ${socket.id}`)
+    logger.info('Client disconnected', { socketId: socket.id })
   })
 })
 
@@ -168,14 +171,14 @@ export async function checkPortfolioRiskAlerts() {
       }
     }
   } catch (error) {
-    console.error('Error checking portfolio risk:', error)
+    logger.error('Error checking portfolio risk', error)
   }
 }
 
 const PORT = parseInt(process.env.WS_PORT || '3001')
 
 httpServer.listen(PORT, () => {
-  console.log(`WebSocket server running on port ${PORT}`)
+  logger.info('WebSocket server started', { port: PORT })
 
   // Start periodic risk monitoring
   setInterval(checkPortfolioRiskAlerts, 60000) // Check every minute
