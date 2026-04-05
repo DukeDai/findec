@@ -42,6 +42,21 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+function calculateRSI(closes: number[], period: number): number {
+  if (closes.length < period + 1) return 50
+  let gains = 0, losses = 0
+  for (let i = closes.length - period; i < closes.length; i++) {
+    const delta = closes[i] - closes[i - 1]
+    if (delta >= 0) gains += delta
+    else losses += Math.abs(delta)
+  }
+  const avgGain = gains / period
+  const avgLoss = losses / period
+  if (avgLoss === 0) return 100
+  const rs = avgGain / avgLoss
+  return 100 - 100 / (1 + rs)
+}
+
 export function initializeAlertEngine() {
   if (io && !alertEngine) {
     alertEngine = new AlertEngine(io)
@@ -92,6 +107,24 @@ export async function checkAlerts() {
         case 'change_below':
           triggered = (data.changePercent || 0) < -(alert.targetValue || 0)
           break
+        case 'rsi_overbought':
+        case 'rsi_oversold': {
+          const historyRes = await fetch(
+            `http://localhost:3000/api/history?symbol=${alert.symbol}&range=3mo`
+          )
+          if (historyRes.ok) {
+            const historyData = await historyRes.json()
+            const closes = (historyData.data || []).map((d: { close: number }) => d.close)
+            if (closes.length >= 15) {
+              const rsiValue = calculateRSI(closes, 14)
+              const threshold = alert.targetValue ?? (alert.condition === 'rsi_overbought' ? 70 : 30)
+              triggered = alert.condition === 'rsi_overbought'
+                ? rsiValue > threshold
+                : rsiValue < threshold
+            }
+          }
+          break
+        }
       }
 
       if (triggered && !alert.triggeredAt) {

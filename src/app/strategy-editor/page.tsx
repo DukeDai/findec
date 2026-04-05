@@ -12,7 +12,7 @@ import {
   StrategyAction,
 } from '@/components/strategy-editor'
 import { VersionHistory } from '@/components/strategy-editor/VersionHistory'
-import { Plus, Save, Trash2, Edit2, ChevronLeft, AlertCircle } from 'lucide-react'
+import { Plus, Save, Trash2, Edit2, ChevronLeft, AlertCircle, Code2, Eye } from 'lucide-react'
 
 interface CustomStrategy {
   id: string
@@ -50,6 +50,13 @@ export default function StrategyEditorPage() {
   const [description, setDescription] = useState('')
   const [rootRule, setRootRule] = useState<StrategyRule>(DEFAULT_RULE)
   const [action, setAction] = useState<StrategyAction>(DEFAULT_ACTION)
+
+  const [showJsonEditor, setShowJsonEditor] = useState(false)
+  const [jsonContent, setJsonContent] = useState('')
+  const [jsonStatus, setJsonStatus] = useState<'valid' | 'invalid' | null>(null)
+  const [jsonError, setJsonError] = useState<string | null>(null)
+
+  const strategyJson = JSON.stringify({ rules: rootRule, actions: action }, null, 2)
 
   useEffect(() => {
     loadStrategies()
@@ -267,75 +274,165 @@ export default function StrategyEditorPage() {
                     <CardTitle>
                       {selectedStrategy ? '编辑策略' : '新建策略'}
                     </CardTitle>
+                    <div className="flex items-center gap-1 ml-auto bg-muted rounded-lg p-1">
+                      <Button
+                        variant={!showJsonEditor ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => {
+                          if (showJsonEditor) {
+                            setShowJsonEditor(false)
+                          }
+                        }}
+                        className="h-7 text-xs"
+                      >
+                        <Eye className="w-3.5 h-3.5 mr-1" />
+                        可视化编辑
+                      </Button>
+                      <Button
+                        variant={showJsonEditor ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => {
+                          if (!showJsonEditor) {
+                            setJsonContent(strategyJson)
+                            setJsonStatus('valid')
+                            setJsonError(null)
+                            setShowJsonEditor(true)
+                          }
+                        }}
+                        className="h-7 text-xs"
+                      >
+                        <Code2 className="w-3.5 h-3.5 mr-1" />
+                        JSON编辑
+                      </Button>
+                    </div>
                   </div>
-                  <CardDescription>配置策略条件和执行动作</CardDescription>
+                  <CardDescription>
+                    {showJsonEditor ? '直接编辑JSON配置' : '配置策略条件和执行动作'}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-sm font-medium mb-1.5 block">
-                        策略名称
-                      </label>
-                      <Input
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="输入策略名称"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-1.5 block">
-                        策略描述
-                      </label>
-                      <Input
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="输入策略描述（可选）"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-medium">条件设置</h3>
-                    <ConditionGroup rule={rootRule} onChange={setRootRule} />
-                  </div>
-
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-medium">执行动作</h3>
-                    <ActionConfig action={action} onChange={setAction} />
-                  </div>
-
-                  <StrategyPreview rootRule={rootRule} action={action} />
-
-                  <div className="flex gap-3 pt-4 border-t">
-                    <Button
-                      variant="outline"
-                      onClick={handleBackToList}
-                      className="hidden lg:flex"
-                    >
-                      取消
-                    </Button>
-                    {selectedStrategy && (
-                      <VersionHistory
-                        entityId={selectedStrategy.id}
-                        entityType="strategy"
-                        currentData={{
-                          name,
-                          description,
-                          rules: rootRule,
-                          actions: action,
+                  {showJsonEditor ? (
+                    <div className="space-y-4">
+                      <textarea
+                        className="w-full min-h-[400px] p-4 bg-muted border rounded-lg font-mono text-sm overflow-auto"
+                        value={jsonContent}
+                        onChange={(e) => {
+                          setJsonContent(e.target.value)
+                          try {
+                            JSON.parse(e.target.value)
+                            setJsonStatus('valid')
+                            setJsonError(null)
+                          } catch {
+                            setJsonStatus('invalid')
+                            setJsonError('JSON 格式错误')
+                          }
                         }}
-                        onRestore={loadStrategies}
+                        spellCheck={false}
                       />
-                    )}
-                    <Button
-                      onClick={handleSaveStrategy}
-                      disabled={isLoading}
-                      className="flex-1 lg:flex-none"
-                    >
-                      <Save className="w-4 h-4 mr-2" />
-                      {isLoading ? '保存中...' : '保存策略'}
-                    </Button>
-                  </div>
+                      {jsonStatus === 'invalid' && jsonError && (
+                        <div className="text-sm text-red-500">{jsonError}</div>
+                      )}
+                      <div className="flex gap-3">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setShowJsonEditor(false)
+                            setJsonStatus(null)
+                            setJsonError(null)
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          返回可视化
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            try {
+                              const parsed = JSON.parse(jsonContent)
+                              if (parsed.rules) setRootRule(parsed.rules)
+                              if (parsed.actions) setAction(parsed.actions)
+                              setShowJsonEditor(false)
+                              setJsonStatus(null)
+                              setJsonError(null)
+                            } catch {
+                              setJsonStatus('invalid')
+                              setJsonError('无效的策略配置 JSON')
+                            }
+                          }}
+                          disabled={jsonStatus !== 'valid'}
+                        >
+                          应用到策略
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-sm font-medium mb-1.5 block">
+                            策略名称
+                          </label>
+                          <Input
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="输入策略名称"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium mb-1.5 block">
+                            策略描述
+                          </label>
+                          <Input
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="输入策略描述（可选）"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <h3 className="text-sm font-medium">条件设置</h3>
+                        <ConditionGroup rule={rootRule} onChange={setRootRule} />
+                      </div>
+
+                      <div className="space-y-3">
+                        <h3 className="text-sm font-medium">执行动作</h3>
+                        <ActionConfig action={action} onChange={setAction} />
+                      </div>
+
+                      <StrategyPreview rootRule={rootRule} action={action} />
+
+                      <div className="flex gap-3 pt-4 border-t">
+                        <Button
+                          variant="outline"
+                          onClick={handleBackToList}
+                          className="hidden lg:flex"
+                        >
+                          取消
+                        </Button>
+                        {selectedStrategy && (
+                          <VersionHistory
+                            entityId={selectedStrategy.id}
+                            entityType="strategy"
+                            currentData={{
+                              name,
+                              description,
+                              rules: rootRule,
+                              actions: action,
+                            }}
+                            onRestore={loadStrategies}
+                          />
+                        )}
+                        <Button
+                          onClick={handleSaveStrategy}
+                          disabled={isLoading}
+                          className="flex-1 lg:flex-none"
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          {isLoading ? '保存中...' : '保存策略'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ) : (

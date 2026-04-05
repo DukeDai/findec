@@ -220,6 +220,7 @@ export function CreateForm({ visible, onClose, onSubmit, initialData }: CreateFo
               <option value="daily">每日</option>
               <option value="weekly">每周</option>
               <option value="monthly">每月</option>
+              <option value="quarterly">每季度</option>
               <option value="none">不执行</option>
             </select>
           </div>

@@ -10,6 +10,7 @@ interface IndicatorState {
   ema20: boolean
   rsi: boolean
   macd: boolean
+  vwap: boolean
 }
 
 const INDICATOR_COLORS: Record<string, string> = {
@@ -22,6 +23,7 @@ const INDICATOR_COLORS: Record<string, string> = {
   ema20: '#ec4899',
   rsi: '#6366f1',
   macd: '#14b8a6',
+  vwap: '#a855f7',
 }
 
 const INDICATOR_LABELS: [string, keyof IndicatorState][] = [
@@ -34,6 +36,7 @@ const INDICATOR_LABELS: [string, keyof IndicatorState][] = [
   ['EMA20', 'ema20'],
   ['RSI', 'rsi'],
   ['MACD', 'macd'],
+  ['VWAP', 'vwap'],
 ]
 
 interface ChartToolbarProps {

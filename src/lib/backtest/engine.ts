@@ -42,7 +42,7 @@ export interface BacktestConfig {
   initialCapital: number
   allocation: Map<string, number>
   strategies: StrategyConfig[]
-  rebalance: 'none' | 'daily' | 'weekly' | 'monthly'
+  rebalance: 'none' | 'daily' | 'weekly' | 'monthly' | 'quarterly'
   rebalanceThreshold: number
   startDate?: Date | string
   endDate?: Date | string
@@ -376,6 +376,8 @@ export class PortfolioBacktestEngine {
         return daysDiff >= 7
       case 'monthly':
         return daysDiff >= 30
+      case 'quarterly':
+        return daysDiff >= 90
       case 'none':
       default:
         return false

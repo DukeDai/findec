@@ -14,6 +14,7 @@ export interface FactorDefinition {
   id: string
   name: string
   category: 'technical' | 'fundamental' | 'sentiment'
+  strategyGroup?: 'value' | 'momentum' | 'quality' | 'technical'
   description: string
   interpretation?: string
 }
@@ -34,6 +35,7 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     id: 'ma20_position',
     name: 'MA20位置',
     category: 'technical',
+    strategyGroup: 'technical',
     description: 'Price position relative to 20-day moving average (percentage)',
     interpretation: 'Positive = above MA, Negative = below MA',
   },
@@ -41,6 +43,7 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     id: 'ma50_position',
     name: 'MA50位置',
     category: 'technical',
+    strategyGroup: 'technical',
     description: 'Price position relative to 50-day moving average (percentage)',
     interpretation: 'Positive = above MA, Negative = below MA',
   },
@@ -48,6 +51,7 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     id: 'rsi_14',
     name: 'RSI(14)',
     category: 'technical',
+    strategyGroup: 'momentum',
     description: '14-day Relative Strength Index',
     interpretation: '>70 overbought, <30 oversold',
   },
@@ -55,6 +59,7 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     id: 'macd_signal',
     name: 'MACD信号',
     category: 'technical',
+    strategyGroup: 'momentum',
     description: 'MACD histogram value',
     interpretation: 'Positive = bullish, Negative = bearish',
   },
@@ -62,6 +67,7 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     id: 'bollinger_position',
     name: '布林带位置',
     category: 'technical',
+    strategyGroup: 'momentum',
     description: 'Price position within Bollinger Bands (0-100)',
     interpretation: '<20 oversold, >80 overbought',
   },
@@ -69,6 +75,7 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     id: 'momentum_10d',
     name: '10日动量',
     category: 'technical',
+    strategyGroup: 'momentum',
     description: '10-day price change percentage',
     interpretation: 'Positive = upward momentum, Negative = downward momentum',
   },
@@ -76,6 +83,7 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     id: 'volatility_20d',
     name: '20日波动率',
     category: 'technical',
+    strategyGroup: 'technical',
     description: '20-day annualized volatility (standard deviation of returns)',
     interpretation: 'High volatility = high risk environment',
   },
@@ -83,6 +91,7 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     id: 'atr_ratio',
     name: 'ATR比率',
     category: 'technical',
+    strategyGroup: 'technical',
     description: 'Average True Range as percentage of price',
     interpretation: 'Higher value = more volatility',
   },
@@ -90,6 +99,7 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     id: 'price_volume_trend',
     name: '价量趋势',
     category: 'technical',
+    strategyGroup: 'momentum',
     description: 'Volume-weighted momentum indicator (Price Volume Trend)',
     interpretation: 'Positive = money flowing in',
   },
@@ -97,6 +107,7 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     id: 'stoch_k',
     name: '随机K值',
     category: 'technical',
+    strategyGroup: 'momentum',
     description: '14-day Stochastic Oscillator %K value',
     interpretation: '>80 overbought, <20 oversold',
   },
@@ -105,6 +116,7 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     id: 'dmi_plus',
     name: 'DMI正向指标',
     category: 'technical',
+    strategyGroup: 'momentum',
     description: 'Directional Movement Index +DI (14-day); measures upward trend strength',
     interpretation: 'Higher = stronger uptrend; compare with dmi_minus for direction',
   },
@@ -112,6 +124,7 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     id: 'dmi_minus',
     name: 'DMI负向指标',
     category: 'technical',
+    strategyGroup: 'momentum',
     description: 'Directional Movement Index -DI (14-day); measures downward trend strength',
     interpretation: 'Lower = weaker downtrend; compare with dmi_plus for direction',
   },
@@ -119,6 +132,7 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     id: 'adx_trend_strength',
     name: 'ADX趋势强度',
     category: 'technical',
+    strategyGroup: 'technical',
     description: 'Average Directional Index (14-day); quantifies trend strength regardless of direction',
     interpretation: '>25 strong trend, <20 weak/no trend',
   },
@@ -126,6 +140,7 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     id: 'ichimoku_tenkan',
     name: 'Ichimoku转换线',
     category: 'technical',
+    strategyGroup: 'momentum',
     description: 'Ichimoku Cloud Tenkan-sen (Conversion Line): (9-day high + 9-day low) / 2',
     interpretation: 'Above Kijun = bullish signal',
   },
@@ -133,6 +148,7 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     id: 'ichimoku_cloud_top',
     name: 'Ichimoku云带顶',
     category: 'technical',
+    strategyGroup: 'momentum',
     description: 'Ichimoku Cloud top boundary (max of Senkou Span A/B)',
     interpretation: 'Price above cloud = bullish confirmation',
   },
@@ -140,6 +156,7 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     id: 'vortex_pos',
     name: 'Vortex正向',
     category: 'technical',
+    strategyGroup: 'momentum',
     description: 'Vortex Indicator VI+ (14-day); detects upward price trend',
     interpretation: 'VI+ > VI- suggests uptrend',
   },
@@ -147,6 +164,7 @@ export const TECHNICAL_FACTORS: FactorDefinition[] = [
     id: 'vortex_neg',
     name: 'Vortex负向',
     category: 'technical',
+    strategyGroup: 'momentum',
     description: 'Vortex Indicator VI- (14-day); detects downward price trend',
     interpretation: 'VI- > VI+ suggests downtrend',
   },
@@ -202,6 +220,10 @@ export class FactorLibrary {
 
   getFactorsByCategory(category: string): FactorDefinition[] {
     return this.getAllFactors().filter(f => f.category === category)
+  }
+
+  getFactorsByStrategyGroup(group: 'value' | 'momentum' | 'quality' | 'technical'): FactorDefinition[] {
+    return this.getAllFactors().filter(f => f.strategyGroup === group)
   }
 
   calculateFactors(

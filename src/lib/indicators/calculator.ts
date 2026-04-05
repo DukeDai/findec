@@ -29,6 +29,7 @@ export interface IndicatorConfig {
   atr?: { period: number }
   adx?: { period: number }
   obv?: boolean
+  vwap?: boolean
 }
 
 export interface IndicatorValue {
@@ -71,6 +72,7 @@ export interface CalculatedIndicators {
     d: (number | null)[]
   } | null
   obv: (number | null)[]
+  vwap: (number | null)[]
 }
 
 const defaultConfig: Required<IndicatorConfig> = {
@@ -83,6 +85,7 @@ const defaultConfig: Required<IndicatorConfig> = {
   atr: { period: 14 },
   adx: { period: 14 },
   obv: false,
+  vwap: false,
 }
 
 export class IndicatorCalculator {
@@ -103,6 +106,7 @@ export class IndicatorCalculator {
       adx: null,
       stoch: null,
       obv: [],
+      vwap: [],
     }
 
     if (mergedConfig.ma?.length) {
@@ -147,6 +151,10 @@ export class IndicatorCalculator {
 
     if (mergedConfig.obv) {
       result.obv = this.calculateOBV(data)
+    }
+
+    if (mergedConfig.vwap) {
+      result.vwap = this.calculateVWAP(data)
     }
 
     return result
@@ -319,6 +327,21 @@ export class IndicatorCalculator {
     })
 
     return this.alignValues(obvValues, data.length)
+  }
+
+  private calculateVWAP(data: HistoricalPrice[]): (number | null)[] {
+    const vwapValues: number[] = []
+    let cumulativeTPV = 0
+    let cumulativeV = 0
+
+    for (const bar of data) {
+      const typicalPrice = (bar.high + bar.low + bar.close) / 3
+      cumulativeTPV += typicalPrice * bar.volume
+      cumulativeV += bar.volume
+      vwapValues.push(cumulativeV > 0 ? cumulativeTPV / cumulativeV : typicalPrice)
+    }
+
+    return this.alignValues(vwapValues, data.length)
   }
 
   private alignValues(

@@ -38,6 +38,7 @@ const INDICATOR_COLORS: Record<string, string> = {
   macd: "#14b8a6",
   macdSignal: "#f97316",
   macdHistogram: "#64748b",
+  vwap: "#a855f7",
 };
 
 export function ChartContainer({ symbol }: ChartContainerProps) {
@@ -57,6 +58,7 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
     ema20: false,
     rsi: false,
     macd: false,
+    vwap: false,
   });
 
   const [chartData, setChartData] = useState<HistoryDataPoint[]>([]);
@@ -327,6 +329,55 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
         indicatorSeriesRef.current.set("macdHistogram", histogramSeries);
 
         chartRef.current.priceScale("macd").applyOptions({
+          scaleMargins: {
+            top: 0.1,
+            bottom: 0.1,
+          },
+        });
+        break;
+      }
+      case "vwap": {
+        const highs = data.map((d) => d.high);
+        const lows = data.map((d) => d.low);
+        const closes = data.map((d) => d.close);
+        const volumes = data.map((d) => d.volume);
+
+        let cumulativeTPV = 0;
+        let cumulativeV = 0;
+        const vwapData: LineData[] = [];
+
+        for (let i = 0; i < data.length; i++) {
+          const typicalPrice = (highs[i] + lows[i] + closes[i]) / 3;
+          cumulativeTPV += typicalPrice * volumes[i];
+          cumulativeV += volumes[i];
+          const vwap = cumulativeV > 0 ? cumulativeTPV / cumulativeV : typicalPrice;
+          vwapData.push({ time: dates[i], value: vwap });
+        }
+
+        const series = chartRef.current.addSeries(LineSeries, {
+          color: INDICATOR_COLORS.vwap,
+          lineWidth: 2,
+          title: "VWAP",
+          priceScaleId: "vwap",
+          lastValueVisible: false,
+        });
+        series.setData(vwapData);
+        indicatorSeriesRef.current.set("vwap", series);
+
+        series.applyOptions({
+          autoscaleInfoProvider: () => ({
+            priceRange: {
+              minValue: 0,
+              maxValue: 100,
+            },
+            margins: {
+              above: 0,
+              below: 0,
+            },
+          }),
+        });
+
+        chartRef.current.priceScale("vwap").applyOptions({
           scaleMargins: {
             top: 0.1,
             bottom: 0.1,

@@ -20,6 +20,8 @@ const CONDITIONS = [
   { id: 'below', name: '价格低于', unit: '$' },
   { id: 'change_above', name: '涨幅超过', unit: '%' },
   { id: 'change_below', name: '跌幅超过', unit: '%' },
+  { id: 'rsi_overbought', name: 'RSI 超买', unit: '' },
+  { id: 'rsi_oversold', name: 'RSI 超卖', unit: '' },
 ]
 
 export function AlertManager() {
@@ -232,8 +234,8 @@ export function AlertManager() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="text-sm text-muted-foreground">目标值 ({selectedCondition?.unit})</label>
+              <div>
+              <label className="text-sm text-muted-foreground">目标值{selectedCondition?.unit ? ` (${selectedCondition.unit})` : ' (RSI默认70/30)'}</label>
               <input
                 type="number"
                 step="0.01"
