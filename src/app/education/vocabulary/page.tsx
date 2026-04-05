@@ -2,7 +2,7 @@ import { VocabularySearch } from '@/components/learning/VocabularySearch'
 
 export default function VocabularyPage() {
   return (
-    <div className="container py-8 max-w-4xl mx-auto">
+    <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-4">
       <div className="flex items-center gap-2 mb-6">
         <span className="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 font-medium">
           学习模式

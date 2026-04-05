@@ -279,7 +279,7 @@ function SurvivorshipBiasDemo() {
 
 type Tab = 'overfitting' | 'lookahead' | 'survivorship'
 
-export function BacktestPitfalls() {
+export default function BacktestPitfalls() {
   const [activeTab, setActiveTab] = useState<Tab>('overfitting')
 
   const tabs: { id: Tab; label: string }[] = [
@@ -289,7 +289,7 @@ export function BacktestPitfalls() {
   ]
 
   return (
-    <div className="space-y-4">
+    <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-4">
       <div className="flex items-center gap-2 mb-4">
         <span className="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 font-medium">
           学习模式

@@ -65,7 +65,7 @@ src/
 │   ├── analysis/                 # Quantitative analysis (tabbed: screener/backtest/alerts/portfolio)
 │   ├── dashboard/               # Customizable dashboard with widgets
 │   ├── data-manager/            # Batch data download UI
-│   ├── education/                # Learning content (BacktestPitfalls, vocabulary)
+│   ├── education/                # Learning content (6 interactive education pages)
 │   ├── fundamentals/[symbol]/   # Fundamental data page
 │   ├── settings/data-management/ # Import/export JSON backup
 │   ├── strategy-editor/         # Custom strategy JSON editor
@@ -396,4 +396,19 @@ Portfolio models: `Portfolio`, `Position`, `Transaction`
 5. **Database**: SQLite file at `prisma/dev.db` (gitignored)
 6. **Chinese Search**: `StockNameCache` enables Chinese name fuzzy matching for stock search
 7. **Widget Dashboard**: Dashboard widgets are registered in `WidgetRegistry` and persisted to localStorage
-8. **Vocabulary**: 33 quantitative trading terms with Chinese definitions in `vocabulary.ts`
+8. **Vocabulary**: 35 quantitative trading terms with Chinese definitions in `vocabulary.ts`
+
+## Education System
+
+Interactive learning pages under `/education/` with `学习模式` badge and interactive Recharts demos:
+
+| Page | Topic | Demos |
+|------|-------|-------|
+| `vocabulary/page.tsx` | 词汇百科 | Search, category filter, term cards |
+| `backtest-pitfalls/page.tsx` | 回测陷阱 | Overfitting, Look-Ahead Bias, Survivorship Bias |
+| `factor-investing/page.tsx` | 因子投资 | Returns, IC Analysis, Correlation, Portfolio, Fama-French |
+| `backtest-advanced/page.tsx` | 回测深度 | Cost Model, Slippage, Monte Carlo, Rebalance, Significance |
+| `risk-management/page.tsx` | 仓位管理 | Kelly Formula, Risk Parity, Drawdown, VaR/ESG |
+| `data-quality/page.tsx` | 数据质量 | Dividend Adjust, Splits, Survivorship Bias, Quality Check |
+| `strategy-development/page.tsx` | 策略开发 | Signal Construction, Denoising, Event-Driven, Failure Modes |
+| `market-microstructure/page.tsx` | 市场微观 | Order Types, Liquidity, Market Impact, HF vs LF |
