@@ -37,61 +37,105 @@ npx tsc --noEmit
 - **Language**: TypeScript (strict mode enabled)
 - **Database**: Prisma + SQLite (libsql)
 - **Styling**: Tailwind CSS v4 + shadcn/ui
-- **Charts**: Lightweight Charts v5
+- **Charts**: Lightweight Charts v5, Recharts
 - **Technical Analysis**: technicalindicators library
 - **Real-time**: Socket.io for WebSocket (port 3001)
+- **Email**: Nodemailer (SMTP)
 
 ## Project Structure
 
 ```
 src/
-├── app/                    # Next.js App Router
-│   ├── api/               # API Routes (route.ts files)
-│   │   ├── alerts/        # Price alerts
-│   │   ├── backtests/    # Backtesting (single + portfolio)
-│   │   ├── factors/       # Factor screening
-│   │   ├── history/       # Historical data
-│   │   ├── indicators/    # Technical indicators
-│   │   ├── portfolios/    # Portfolio management
-│   │   ├── quotes/       # Real-time quotes
-│   │   └── search/       # Stock search
-│   ├── analysis/         # Quantitative analysis page (tabbed interface)
-│   └── dashboard/        # Portfolio overview page
+├── app/                          # Next.js App Router
+│   ├── api/                      # API Routes
+│   │   ├── alerts/               # Price alerts + browser notification bridge
+│   │   ├── backtests/            # Backtesting (single + portfolio)
+│   │   ├── data-manager/         # Batch data download
+│   │   ├── factors/              # Factor screening + effectiveness + correlation
+│   │   ├── fundamentals/         # Fundamental data
+│   │   ├── history/              # Historical K-line data
+│   │   ├── indicators/           # Technical indicators
+│   │   ├── portfolio/            # Single portfolio risk
+│   │   ├── portfolios/           # Portfolio CRUD + health + positions
+│   │   ├── quotes/              # Real-time quotes
+│   │   ├── search/              # Stock search + name cache
+│   │   ├── strategies/          # Custom strategy editor
+│   │   ├── user-config/         # User preferences (email, notification settings)
+│   │   └── ws/                   # WebSocket route
+│   ├── analysis/                 # Quantitative analysis (tabbed: screener/backtest/alerts/portfolio)
+│   ├── dashboard/               # Customizable dashboard with widgets
+│   ├── data-manager/            # Batch data download UI
+│   ├── education/                # Learning content (BacktestPitfalls, vocabulary)
+│   ├── fundamentals/[symbol]/   # Fundamental data page
+│   ├── settings/data-management/ # Import/export JSON backup
+│   ├── strategy-editor/         # Custom strategy JSON editor
+│   └── page.tsx                 # Landing/Dashboard
 ├── components/
-│   ├── analysis/         # Analysis UI components (FactorScreener, BacktestRunner, etc.)
-│   ├── chart/            # Chart components (ChartContainer, IndicatorOverlay)
-│   ├── dashboard/        # Dashboard components (QuickQuote, StockList, RiskPanel)
-│   ├── layout/           # Layout components (Navigation, PageHeader)
-│   └── ui/               # shadcn/ui components
+│   ├── analysis/                 # Analysis UI components
+│   ├── chart/                   # Chart components (Lightweight Charts)
+│   ├── dashboard/               # Dashboard + widget components
+│   ├── factors/                 # Factor visualization components
+│   ├── fundamentals/            # Fundamental data display
+│   ├── interactive/             # Parameter controls (Phase 5)
+│   ├── layout/                 # Layout components (Navigation, Breadcrumb)
+│   ├── learning/               # Vocabulary tooltip + search
+│   ├── strategy-editor/         # Strategy JSON editor
+│   └── ui/                     # shadcn/ui base components
 └── lib/
-    ├── backtest/         # Backtest engine modules
-    │   ├── cost-model.ts      # Trading cost model
-    │   ├── engine.ts         # Portfolio backtest engine
-    │   ├── position-manager.ts # Position management
-    │   └── risk-metrics.ts   # Risk metrics calculator
-    ├── data/              # Data layer modules
-    │   ├── cache-manager.ts  # Cache manager
-    │   ├── data-source.ts    # DataSource abstraction
-    │   └── rate-limiter.ts   # API rate limiter
-    ├── factors/           # Factor system modules
-    │   ├── factor-library.ts # Factor definitions
-    │   ├── factor-metrics.ts # Factor effectiveness analysis
-    │   └── screening-engine.ts # Screening execution
-    ├── indicators/        # Indicator modules
-    │   ├── calculator.ts      # Extended indicator calculator
-    │   └── signal-decorator.ts # Signal annotation
-    ├── portfolio/         # Portfolio modules
-    │   ├── allocation.ts     # Allocation optimizer
-    │   └── risk-monitor.ts   # Risk monitoring
-    ├── realtime/           # Real-time modules
-    │   └── alert-engine.ts   # Alert engine
-    ├── prisma.ts          # Prisma client singleton
-    ├── utils.ts           # Utility functions (cn)
-    ├── yahoo-finance.ts   # Yahoo Finance API
-    └── websocket-server.ts  # WebSocket server
+    ├── backtest/               # Backtest engine
+    │   ├── cost-model.ts        # Trading cost model (commission/slippage/stamp duty)
+    │   ├── engine.ts            # Portfolio backtest engine
+    │   ├── grid-search.ts       # Grid search optimization
+    │   ├── monte-carlo.ts       # Monte Carlo simulation
+    │   ├── position-manager.ts  # Position management
+    │   ├── risk-metrics.ts      # Risk metrics calculator
+    │   └── walk-forward.ts      # Walk-Forward analysis
+    ├── data/                    # Data layer
+    │   ├── cache-manager.ts     # SQLite-backed cache
+    │   ├── data-source.ts       # DataSource abstraction
+    │   ├── data-source-config.ts # Data source configuration
+    │   ├── data-source-registry.ts # Multi-source registry + circuit breaker
+    │   ├── fundamental-data.ts  # Fundamental data fetcher
+    │   ├── rate-limiter.ts      # API rate limiter
+    │   └── sources/             # Source implementations
+    │       ├── finnhub-source.ts
+    │       ├── polygon-source.ts
+    │       └── yahoo-finance-source.ts
+    ├── export/                  # Export utilities
+    │   ├── backup.ts            # JSON import/export
+    │   └── exportUtils.ts       # CSV + HTML print export
+    ├── factors/                 # Factor system
+    │   ├── factor-correlation.ts # Factor correlation matrix
+    │   ├── factor-library.ts    # Factor definitions
+    │   ├── factor-metrics.ts    # Factor effectiveness (IC/IR)
+    │   ├── fundamental-factors.ts # Fundamental factors (PE, ROE, etc.)
+    │   ├── screening-engine.ts  # Screening execution engine
+    │   └── strategy-templates.ts # Preset strategy templates
+    ├── hooks/                   # React hooks
+    │   ├── useBrowserNotifications.ts
+    │   └── useWebSocket.ts
+    ├── indicators/              # Indicator system
+    │   ├── calculator.ts        # Extended indicator calculator
+    │   └── signal-decorator.ts  # Signal annotation
+    ├── learning/                # Learning system
+    │   └── vocabulary.ts        # 33 quantitative trading terms (Chinese)
+    ├── portfolio/               # Portfolio modules
+    │   ├── allocation.ts        # Allocation optimizer
+    │   ├── health-score.ts      # Portfolio health score (5-dimension)
+    │   └── risk-monitor.ts      # Risk monitoring
+    ├── realtime/                 # Real-time modules
+    │   ├── alert-engine.ts      # Alert engine
+    │   └── email-notifier.ts    # SMTP email notifier
+    ├── prisma.ts               # Prisma client singleton
+    ├── alert-monitor.ts        # Alert monitoring loop
+    ├── indicators.ts           # Indicator registry
+    ├── portfolio-metrics.ts     # Portfolio metrics calculator
+    ├── utils.ts                # Utility functions (cn)
+    ├── yahoo-finance.ts        # Yahoo Finance API wrapper
+    └── websocket-server.ts      # WebSocket server
 
 prisma/
-└── schema.prisma          # Database schema
+└── schema.prisma               # Database schema
 ```
 
 ## Code Style Guidelines
@@ -101,7 +145,7 @@ prisma/
 ```typescript
 // 1. React/Next.js imports
 import { useState, useEffect } from 'react'
-import NextRequest, { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 // 2. External packages (alphabetical)
 import { Button } from '@/components/ui/button'
@@ -258,6 +302,18 @@ const dataSource = new DataSource()
 const data = await dataSource.getHistoricalData('AAPL', '1y')
 ```
 
+### Multi-Source Registry (Phase 1)
+
+```typescript
+import { DataSourceRegistry } from '@/lib/data/data-source-registry'
+
+const registry = new DataSourceRegistry()
+registry.register('yahoo', new YahooFinanceSource())
+registry.register('finnhub', new FinnhubSource())
+// Auto-failover with circuit breaker
+const data = await registry.getHistoricalData('AAPL', '1y')
+```
+
 ### Risk Metrics
 
 ```typescript
@@ -265,6 +321,16 @@ import { RiskMetricsCalculator } from '@/lib/backtest/risk-metrics'
 
 const calculator = new RiskMetricsCalculator()
 const metrics = calculator.calculate(equityCurve)
+```
+
+### Portfolio Health Score (Phase 4)
+
+```typescript
+import { calculateHealthScore } from '@/lib/portfolio/health-score'
+
+const score = await calculateHealthScore(portfolioId)
+// score.total (0-100), score.concentration, score.volatility,
+// score.correlation, score.liquidity, score.riskAdjustedReturn
 ```
 
 ### Factor Screening
@@ -278,6 +344,21 @@ const engine = new ScreeningEngine(library)
 const results = await engine.screen(strategy, symbols)
 ```
 
+### Factor Effectiveness Analysis (Phase 3)
+
+```typescript
+import { calculateFactorMetrics } from '@/lib/factors/factor-metrics'
+// Returns IC, IC_IR, group returns, IC decay for each factor
+```
+
+### Browser Notifications (Phase 4)
+
+```typescript
+import { useBrowserNotifications } from '@/lib/hooks/useBrowserNotifications'
+
+const { requestPermission, sendNotification } = useBrowserNotifications()
+```
+
 ### WebSocket Alerts
 
 ```typescript
@@ -289,9 +370,18 @@ socket.on('alert-triggered', (alert) => {
 })
 ```
 
+### Export (Phase 5)
+
+```typescript
+import { exportToCSV, exportToPrintableHTML } from '@/lib/export/exportUtils'
+
+const csv = exportToCSV(trades)
+const html = exportToPrintableHTML(backtestResult)
+```
+
 ## Database Models (Prisma)
 
-Core models: `Stock`, `HistoricalData`, `UserConfig`
+Core models: `Stock`, `HistoricalData`, `UserConfig`, `DataSourceMeta`
 Factor models: `FactorStrategy`, `FactorRule`, `FactorHistory`, `ScreeningResult`
 Backtest models: `BacktestPlan`, `BacktestTrade`, `PortfolioBacktestPlan`
 Alert models: `Alert`, `RiskAlertLog`
@@ -300,7 +390,10 @@ Portfolio models: `Portfolio`, `Position`, `Transaction`
 ## Important Notes
 
 1. **Learning Mode**: Navigation has a learning mode toggle for educational content
-2. **Mock Fallback**: Data layer falls back to mock data when Yahoo Finance fails
+2. **Mock Fallback**: Data layer falls back to mock data when all external sources fail
 3. **Preset Strategies**: Factor screener and backtest runners have preset strategies for quick testing
 4. **WebSocket**: Alert system uses Socket.io on port 3001
 5. **Database**: SQLite file at `prisma/dev.db` (gitignored)
+6. **Chinese Search**: `StockNameCache` enables Chinese name fuzzy matching for stock search
+7. **Widget Dashboard**: Dashboard widgets are registered in `WidgetRegistry` and persisted to localStorage
+8. **Vocabulary**: 33 quantitative trading terms with Chinese definitions in `vocabulary.ts`
