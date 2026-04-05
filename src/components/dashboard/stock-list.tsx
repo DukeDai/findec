@@ -8,7 +8,9 @@ import { Input } from '@/components/ui/input'
 interface SearchResult {
   symbol: string
   name: string
+  nameZh?: string
   exchange: string
+  type: string
 }
 
 export function StockList() {
@@ -61,7 +63,12 @@ export function StockList() {
                 <div className="font-medium text-zinc-900 dark:text-zinc-100">
                   {stock.symbol}
                 </div>
-                <div className="text-sm text-zinc-500">{stock.name}</div>
+                <div className="text-sm text-zinc-500">
+                  {stock.name}
+                  {stock.nameZh && (
+                    <span className="ml-1 text-zinc-400">{stock.nameZh}</span>
+                  )}
+                </div>
                 <div className="text-xs text-zinc-500">{stock.exchange}</div>
               </Link>
             ))}

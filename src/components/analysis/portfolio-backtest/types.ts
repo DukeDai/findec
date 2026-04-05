@@ -105,6 +105,18 @@ export interface BacktestReport {
   }
   assetBreakdown: { symbol: string; return: number; weight: number }[]
   monthlyReturns: { month: string; return: number }[]
+  benchmarkResult?: {
+    benchmarkReturn: number
+    benchmarkAnnualReturn: number
+    alpha: number
+    beta: number
+    trackingError: number
+    informationRatio: number
+    correlation: number
+    rSquared: number
+    benchmarkEquityCurve: { date: string; value: number }[]
+  }
+  benchmark?: 'SPY' | 'QQQ'
 }
 
 export const STRATEGIES = [

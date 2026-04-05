@@ -23,6 +23,7 @@ export function PortfolioBacktestRunner() {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [executing, setExecuting] = useState(false)
   const [createFormInitialData, setCreateFormInitialData] = useState<{ name: string; symbols: string } | null>(null)
+  const [benchmark, setBenchmark] = useState<'SPY' | 'QQQ' | undefined>(undefined)
 
   const [advancedTab, setAdvancedTab] = useState<AdvancedTabType>(null)
   const [optimizationResults, setOptimizationResults] = useState<OptimizationResult[] | null>(null)
@@ -123,10 +124,13 @@ export function PortfolioBacktestRunner() {
     try {
       const res = await fetch(`/api/backtests/portfolio/${planId}/execute`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ benchmark }),
       })
 
       if (!res.ok) throw new Error('Failed to execute backtest')
-      await loadReport(planId)
+      const data = await res.json()
+      setReport(data)
       await loadPlans()
     } catch (error) {
       console.error('Failed to execute backtest:', error)
@@ -257,6 +261,42 @@ export function PortfolioBacktestRunner() {
         onSubmit={handleCreateFormSubmit}
         initialData={createFormInitialData}
       />
+
+      <div className="flex items-center gap-4 p-3 rounded-lg border bg-card">
+        <span className="text-sm text-muted-foreground">基准对比:</span>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setBenchmark(undefined)}
+            className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+              benchmark === undefined
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted hover:bg-muted/80'
+            }`}
+          >
+            无
+          </button>
+          <button
+            onClick={() => setBenchmark('SPY')}
+            className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+              benchmark === 'SPY'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted hover:bg-muted/80'
+            }`}
+          >
+            SPY (标普500)
+          </button>
+          <button
+            onClick={() => setBenchmark('QQQ')}
+            className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+              benchmark === 'QQQ'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted hover:bg-muted/80'
+            }`}
+          >
+            QQQ (纳斯达克100)
+          </button>
+        </div>
+      </div>
 
       <PlanList
         plans={plans}

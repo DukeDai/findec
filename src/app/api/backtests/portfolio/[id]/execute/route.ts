@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { BacktestConfig } from '@/lib/backtest-engine'
 import { executeBacktest } from '@/lib/backtest-engine'
+import { calculateBenchmarkMetrics, BenchmarkResult } from '@/lib/backtest/benchmark-calculator'
 
 interface Trade {
   date: Date
@@ -34,6 +35,7 @@ interface ExecuteResponse {
   }
   equityCurve: EquityPoint[]
   trades: Trade[]
+  benchmarkResult?: BenchmarkResult
 }
 
 function calculateSharpeRatio(returns: number[], riskFreeRate: number = 0.02): number {
@@ -108,6 +110,8 @@ export async function POST(
       where: { id },
       data: { status: 'running' },
     })
+
+    const benchmark: 'SPY' | 'QQQ' | undefined = body.benchmark
 
     const symbols: string[] = JSON.parse(plan.symbols)
     const strategies: { id: string; type: string; parameters?: Record<string, number> }[] =
@@ -245,6 +249,20 @@ export async function POST(
 
     allTrades.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
+    // Calculate benchmark metrics if requested
+    let benchmarkResult: BenchmarkResult | null = null
+    if (benchmark && mergedEquityCurve.length > 0) {
+      const portfolioCurve = mergedEquityCurve.map((p) => ({
+        date: new Date(p.date),
+        value: p.value,
+      }))
+      benchmarkResult = await calculateBenchmarkMetrics(
+        portfolioCurve,
+        benchmark,
+        plan.initialCapital
+      )
+    }
+
     await prisma.portfolioBacktestPlan.update({
       where: { id },
       data: {
@@ -284,6 +302,7 @@ export async function POST(
       },
       equityCurve: mergedEquityCurve,
       trades: allTrades,
+      ...(benchmarkResult && { benchmarkResult }),
     }
 
     return NextResponse.json(response)

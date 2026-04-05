@@ -49,7 +49,7 @@ export async function POST(
 
     const costModel = new CostModel({
       commission: { type: 'percent', fixedPerTrade: 0, percentOfValue: 0.001 },
-      slippage: { model: 'fixed', fixedPercent: 0.001 },
+      slippage: { model: 'fixed', value: 0.001 },
     })
     const dataSource = new (class implements DataSource {
       async fetchData(symbol: string, startDate: Date, endDate: Date) {

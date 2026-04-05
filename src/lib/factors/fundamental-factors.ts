@@ -1,4 +1,4 @@
-import { FundamentalData } from '@/lib/yahoo-finance'
+import { FundamentalData } from '@/lib/data/fundamental-data'
 
 export interface FundamentalFactor {
   id: string

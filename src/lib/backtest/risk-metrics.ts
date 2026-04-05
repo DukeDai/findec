@@ -45,6 +45,36 @@ export interface BenchmarkComparison {
   rSquared: number
 }
 
+export interface DrawdownEvent {
+  startDate: Date
+  endDate: Date
+  peakValue: number
+  troughValue: number
+  drawdown: number
+  duration: number
+  recoveryDays: number
+}
+
+export interface DrawdownAnalysis {
+  maxDrawdown: number
+  maxDrawdownDuration: number
+  avgDrawdownDepth: number
+  avgRecoveryDays: number
+  drawdownCount: number
+  drawdownEvents: DrawdownEvent[]
+}
+
+export interface RiskAnalysis {
+  omegaRatio: number
+  skewness: number
+  kurtosis: number
+  historicalVaR95: number
+  historicalVaR99: number
+  parametricVaR95: number
+  parametricVaR99: number
+  drawdownAnalysis: DrawdownAnalysis
+}
+
 export interface TradeForStats {
   type: 'BUY' | 'SELL'
   value: number
@@ -318,6 +348,145 @@ export class RiskMetricsCalculator {
       avgLoss,
       profitFactor,
       maxConsecutiveLosses,
+    }
+  }
+
+  calculateRiskAnalysis(equityCurve: EquityPoint[]): RiskAnalysis {
+    if (equityCurve.length < 2) {
+      return {
+        omegaRatio: 0,
+        skewness: 0,
+        kurtosis: 0,
+        historicalVaR95: 0,
+        historicalVaR99: 0,
+        parametricVaR95: 0,
+        parametricVaR99: 0,
+        drawdownAnalysis: {
+          maxDrawdown: 0,
+          maxDrawdownDuration: 0,
+          avgDrawdownDepth: 0,
+          avgRecoveryDays: 0,
+          drawdownCount: 0,
+          drawdownEvents: [],
+        },
+      }
+    }
+
+    const returns = this.calculateReturns(equityCurve)
+    const omega = this.calculateOmegaRatio(returns)
+    const skew = this.calculateSkewness(returns)
+    const kurt = this.calculateKurtosis(returns)
+    const histVaR95 = this.calculateHistoricalVaR(returns, 0.95)
+    const histVaR99 = this.calculateHistoricalVaR(returns, 0.99)
+    const paraVaR95 = this.calculateVaR(returns, 0.95)
+    const paraVaR99 = this.calculateVaR(returns, 0.99)
+    const ddAnalysis = this.calculateDrawdownAnalysis(equityCurve)
+
+    return {
+      omegaRatio: omega,
+      skewness: skew,
+      kurtosis: kurt,
+      historicalVaR95: histVaR95,
+      historicalVaR99: histVaR99,
+      parametricVaR95: paraVaR95,
+      parametricVaR99: paraVaR99,
+      drawdownAnalysis: ddAnalysis,
+    }
+  }
+
+  private calculateOmegaRatio(returns: number[], threshold = 0): number {
+    if (returns.length === 0) return 0
+
+    const gains = returns.filter(r => r > threshold).reduce((sum, r) => sum + (r - threshold), 0)
+    const losses = Math.abs(returns.filter(r => r < threshold).reduce((sum, r) => sum + (r - threshold), 0))
+
+    if (losses === 0) return gains > 0 ? Infinity : 0
+    return gains / losses
+  }
+
+  private calculateSkewness(returns: number[]): number {
+    if (returns.length < 3) return 0
+
+    const mean = returns.reduce((s, r) => s + r, 0) / returns.length
+    const std = Math.sqrt(returns.reduce((s, r) => s + Math.pow(r - mean, 2), 0) / returns.length)
+    if (std === 0) return 0
+
+    const n = returns.length
+    const skew = returns.reduce((s, r) => s + Math.pow((r - mean) / std, 3), 0)
+    return (n / ((n - 1) * (n - 2))) * skew
+  }
+
+  private calculateKurtosis(returns: number[]): number {
+    if (returns.length < 4) return 0
+
+    const mean = returns.reduce((s, r) => s + r, 0) / returns.length
+    const std = Math.sqrt(returns.reduce((s, r) => s + Math.pow(r - mean, 2), 0) / returns.length)
+    if (std === 0) return 0
+
+    const n = returns.length
+    const kurt = returns.reduce((s, r) => s + Math.pow((r - mean) / std, 4), 0)
+    const excess = ((n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3))) * kurt
+      - (3 * Math.pow(n - 1, 2)) / ((n - 2) * (n - 3))
+    return excess
+  }
+
+  private calculateHistoricalVaR(returns: number[], confidence: number): number {
+    if (returns.length < 2) return 0
+    const sorted = [...returns].sort((a, b) => a - b)
+    const index = Math.floor((1 - confidence) * sorted.length)
+    return Math.abs(sorted[index] ?? 0) * 100
+  }
+
+  private calculateDrawdownAnalysis(equityCurve: EquityPoint[]): DrawdownAnalysis {
+    const events: DrawdownEvent[] = []
+    let peak = equityCurve[0].value
+    let peakDate = equityCurve[0].date
+    let inDrawdown = false
+    let trough = equityCurve[0].value
+    let troughDate = equityCurve[0].date
+
+    for (let i = 1; i < equityCurve.length; i++) {
+      const value = equityCurve[i].value
+      const date = equityCurve[i].date
+
+      if (value > peak) {
+        if (inDrawdown && trough < peak) {
+          events.push({
+            startDate: peakDate,
+            endDate: date,
+            peakValue: peak,
+            troughValue: trough,
+            drawdown: ((peak - trough) / peak) * 100,
+            duration: this.getDaysBetween(peakDate, troughDate),
+            recoveryDays: this.getDaysBetween(troughDate, date),
+          })
+        }
+        peak = value
+        peakDate = date
+        trough = value
+        troughDate = date
+        inDrawdown = false
+      } else if (value < trough) {
+        trough = value
+        troughDate = date
+        inDrawdown = true
+      }
+    }
+
+    const depths = events.map(e => e.drawdown)
+    const recoveries = events.filter(e => e.recoveryDays > 0).map(e => e.recoveryDays)
+    const maxDD = depths.length > 0 ? Math.max(...depths) : 0
+    const maxDuration = events.length > 0 ? Math.max(...events.map(e => e.duration)) : 0
+    const avgDepth = depths.length > 0 ? depths.reduce((s, d) => s + d, 0) / depths.length : 0
+    const avgRecovery = recoveries.length > 0 ? recoveries.reduce((s, d) => s + d, 0) / recoveries.length : 0
+
+    return {
+      maxDrawdown: maxDD,
+      maxDrawdownDuration: maxDuration,
+      avgDrawdownDepth: avgDepth,
+      avgRecoveryDays: avgRecovery,
+      drawdownCount: events.length,
+      drawdownEvents: events,
     }
   }
 

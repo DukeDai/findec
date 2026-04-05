@@ -14,6 +14,7 @@ interface NavItem {
 const mainNav: NavItem[] = [
   { label: 'K线图', href: '/', description: '查看股票K线' },
   { label: '量化分析', href: '/analysis', description: '因子选股、回测、监控' },
+  { label: '策略编辑器', href: '/strategy-editor', description: '可视化策略创建' },
 ]
 
 // Context for learning mode (so child components can access)

@@ -228,3 +228,39 @@ model RiskAlertLog {
   @@index([portfolioId])
   @@index([triggeredAt])
 }
+
+// Local data cache for downloaded historical data
+model LocalDataCache {
+  id        String   @id @default(uuid())
+  symbol    String
+  range     String
+  fetchedAt DateTime @default(now())
+  dataHash  String
+
+  @@unique([symbol, range])
+}
+
+// Stock name cache for Chinese name search support
+model StockNameCache {
+  id        String   @id @default(uuid())
+  symbol    String   @unique
+  name      String              // English name
+  nameZh    String?             // Chinese name (optional)
+  exchange  String?
+  type      String?
+  cachedAt  DateTime @default(now())
+
+  @@index([nameZh])
+  @@index([cachedAt])
+}
+
+// Custom user-defined trading strategies
+model CustomStrategy {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  rules       Json     // Serialized rule tree
+  actions     Json     // Serialized action config
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

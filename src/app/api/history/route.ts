@@ -73,7 +73,6 @@ export async function GET(request: NextRequest) {
       symbol: normalizedSymbol,
       range,
       interval,
-      cached: dataPoints[0]?.source === 'cache',
       source: dataPoints[0]?.source,
       data: historyData,
     }, { status: 200 });

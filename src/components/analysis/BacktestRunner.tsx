@@ -2,7 +2,10 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { CostModelPanel } from './CostModelPanel'
 import { QuickStrategyCards, BacktestForm, BacktestResult } from './backtest'
+import type { CostModelConfig } from '@/lib/backtest/cost-model'
+import { DEFAULT_COST_MODEL } from '@/lib/backtest/cost-model'
 
 interface BacktestPlan {
   id: string
@@ -125,6 +128,7 @@ export function BacktestRunner() {
   const [running, setRunning] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [showConfigForm, setShowConfigForm] = useState(false)
+  const [costModelConfig, setCostModelConfig] = useState<CostModelConfig>(DEFAULT_COST_MODEL)
 
   const loadPlans = async () => {
     try {
@@ -209,6 +213,7 @@ export function BacktestRunner() {
         body: JSON.stringify({
           strategy: config.strategy,
           parameters: params,
+          costModel: costModelConfig,
         }),
       })
       const data = await res.json()
@@ -248,6 +253,7 @@ export function BacktestRunner() {
         body: JSON.stringify({
           strategy: strategyId,
           parameters: params,
+          costModel: costModelConfig,
         }),
       })
       const data = await executeRes.json()
@@ -294,6 +300,12 @@ export function BacktestRunner() {
           onRunBacktest={runBacktest}
           onCloseCreateForm={() => setShowCreateForm(false)}
           onCloseConfigForm={() => setShowConfigForm(false)}
+        />
+
+        <CostModelPanel
+          config={costModelConfig}
+          onChange={setCostModelConfig}
+          estimatedTradeValue={selectedPlan ? selectedPlan.initialCapital * 0.01 : 10000}
         />
 
         <BacktestResult

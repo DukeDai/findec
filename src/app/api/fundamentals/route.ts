@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFundamentalData, FundamentalData } from "@/lib/yahoo-finance";
+import { getFundamentalData } from "@/lib/yahoo-finance";
+import { FundamentalData } from "@/lib/data/fundamental-data";
 
 export async function GET(request: NextRequest) {
   try {

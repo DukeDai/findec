@@ -1,4 +1,4 @@
-import type { TradeCost } from './cost-model'
+import type { DividendReinvestment, TradeCost } from './cost-model'
 
 export interface Position {
   symbol: string
@@ -15,6 +15,7 @@ export interface PortfolioState {
   positions: Map<string, Position>
   totalValue: number
   timestamp: Date
+  totalDividendsReceived: number
 }
 
 export interface Trade {
@@ -27,10 +28,22 @@ export interface Trade {
   reason: string
 }
 
+export interface DividendRecord {
+  symbol: string
+  date: Date
+  dividendPerShare: number
+  totalDividend: number
+  reinvested: boolean
+  sharesReinvested: number
+  cashReceived: number
+}
+
 export class PositionManager {
   private cash: number
   private positions: Map<string, Position>
   private currentTimestamp: Date
+  private dividendHistory: DividendRecord[] = []
+  private totalDividendsReceived: number = 0
 
   constructor(initialCapital: number) {
     this.cash = initialCapital
@@ -49,6 +62,7 @@ export class PositionManager {
       positions: new Map(this.positions),
       totalValue,
       timestamp: this.currentTimestamp,
+      totalDividendsReceived: this.totalDividendsReceived,
     }
   }
 
@@ -195,6 +209,60 @@ export class PositionManager {
     }
 
     this.recalculateWeights()
+  }
+
+  processDividendReinvestment(
+    dividendResult: DividendReinvestment,
+    currentPrice: number
+  ): void {
+    const position = this.positions.get(dividendResult.symbol)
+
+    this.totalDividendsReceived += dividendResult.dividendAmount
+
+    const dividendRecord: DividendRecord = {
+      symbol: dividendResult.symbol,
+      date: dividendResult.date,
+      dividendPerShare: position ? dividendResult.dividendAmount / position.quantity : 0,
+      totalDividend: dividendResult.dividendAmount,
+      reinvested: dividendResult.reinvestAmount > 0,
+      sharesReinvested: dividendResult.sharesPurchased,
+      cashReceived: dividendResult.remainingCash,
+    }
+    this.dividendHistory.push(dividendRecord)
+
+    if (dividendResult.sharesPurchased > 0) {
+      if (position) {
+        const totalQuantity = position.quantity + dividendResult.sharesPurchased
+        const totalCostBasis = (position.entryPrice * position.quantity) + (currentPrice * dividendResult.sharesPurchased)
+        const newEntryPrice = totalCostBasis / totalQuantity
+
+        this.positions.set(dividendResult.symbol, {
+          ...position,
+          quantity: totalQuantity,
+          entryPrice: newEntryPrice,
+        })
+      } else {
+        this.positions.set(dividendResult.symbol, {
+          symbol: dividendResult.symbol,
+          quantity: dividendResult.sharesPurchased,
+          entryPrice: currentPrice,
+          currentPrice,
+          weight: 0,
+          unrealizedPnL: 0,
+          unrealizedPnLPercent: 0,
+        })
+      }
+    }
+
+    this.cash += dividendResult.remainingCash
+  }
+
+  getDividendHistory(): DividendRecord[] {
+    return [...this.dividendHistory]
+  }
+
+  getTotalDividendsReceived(): number {
+    return this.totalDividendsReceived
   }
 
   updatePrices(prices: Map<string, number>): void {
