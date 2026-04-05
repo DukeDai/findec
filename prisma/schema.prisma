@@ -31,10 +31,13 @@ model HistoricalData {
 }
 
 model UserConfig {
-  id        String   @id @default(uuid())
-  key       String   @unique
-  value     String
-  updatedAt DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  key                String   @unique
+  value              String
+  email              String?
+  emailAlertsEnabled Boolean  @default(false)
+  lastEmailSentAt    DateTime?
+  updatedAt          DateTime @updatedAt
 }
 
 model FactorStrategy {

@@ -1,5 +1,7 @@
 import type { Server as SocketIOServer } from 'socket.io'
 import { randomUUID } from 'crypto'
+import { sendAlertEmail, canSendEmail } from '@/lib/realtime/email-notifier'
+import { prisma } from '@/lib/prisma'
 
 export interface AlertCondition {
   id: string
@@ -271,6 +273,31 @@ export class AlertEngine {
         triggeredAt: event.triggeredAt.toISOString(),
       })
       console.log(`Alert broadcast: ${event.message}`)
+    }
+
+    this.sendEmailNotification(event).catch(() => {})
+  }
+
+  private async sendEmailNotification(event: AlertEvent): Promise<void> {
+    try {
+      const userConfig = await prisma.userConfig.findFirst({
+        where: { emailAlertsEnabled: true },
+      })
+      if (!userConfig?.email || !canSendEmail(event.alertId)) {
+        return
+      }
+      await sendAlertEmail({
+        alertId: event.alertId,
+        to: userConfig.email,
+        symbol: event.condition.symbol || 'N/A',
+        alertType: event.condition.type,
+        currentPrice: event.currentValue,
+        threshold: `${event.condition.operator} ${event.condition.threshold}`,
+        triggeredAt: event.triggeredAt,
+        targetUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+      })
+    } catch {
+      // Fail silently - email notification should not break alert functionality
     }
   }
 
