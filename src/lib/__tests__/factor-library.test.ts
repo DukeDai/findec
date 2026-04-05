@@ -61,4 +61,57 @@ describe('FactorLibrary', () => {
     const factors = library.calculateFactors(priceData, 'TEST', new Date('2024-01-04'))
     expect(factors.length).toBeGreaterThan(0)
   })
+
+  describe('strategyGroup', () => {
+    it('returns value factors', () => {
+      const library = new FactorLibrary()
+      const valueFactors = library.getFactorsByStrategyGroup('value')
+      expect(valueFactors.length).toBeGreaterThan(0)
+      valueFactors.forEach(f => {
+        expect(f.strategyGroup).toBe('value')
+      })
+      const ids = valueFactors.map(f => f.id)
+      expect(ids).toContain('pe_ratio')
+      expect(ids).toContain('pb_ratio')
+    })
+
+    it('returns momentum factors', () => {
+      const library = new FactorLibrary()
+      const momentumFactors = library.getFactorsByStrategyGroup('momentum')
+      expect(momentumFactors.length).toBeGreaterThan(0)
+      momentumFactors.forEach(f => {
+        expect(f.strategyGroup).toBe('momentum')
+      })
+      const ids = momentumFactors.map(f => f.id)
+      expect(ids).toContain('rsi_14')
+      expect(ids).toContain('momentum_10d')
+    })
+
+    it('returns quality factors', () => {
+      const library = new FactorLibrary()
+      const qualityFactors = library.getFactorsByStrategyGroup('quality')
+      expect(qualityFactors.length).toBeGreaterThan(0)
+      qualityFactors.forEach(f => {
+        expect(f.strategyGroup).toBe('quality')
+      })
+    })
+
+    it('returns technical factors', () => {
+      const library = new FactorLibrary()
+      const technicalFactors = library.getFactorsByStrategyGroup('technical')
+      expect(technicalFactors.length).toBeGreaterThan(0)
+      technicalFactors.forEach(f => {
+        expect(f.strategyGroup).toBe('technical')
+      })
+    })
+
+    it('covers all four strategy groups', () => {
+      const library = new FactorLibrary()
+      const groups: Array<'value' | 'momentum' | 'quality' | 'technical'> = ['value', 'momentum', 'quality', 'technical']
+      groups.forEach(group => {
+        const factors = library.getFactorsByStrategyGroup(group)
+        expect(factors.length).toBeGreaterThan(0)
+      })
+    })
+  })
 })

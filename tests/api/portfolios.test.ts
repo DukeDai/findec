@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GET, POST } from '@/app/api/portfolios/route'
 import type { NextRequest } from 'next/server'
+import { Prisma } from '@prisma/client'
 
-const mockPortfolio = {
+type PortfolioWithPositions = Prisma.PortfolioGetPayload<{ include: { positions: true } }>
+
+const basePortfolio: PortfolioWithPositions = {
   id: 'portfolio-1',
   name: 'Test Portfolio',
   description: 'Test description',
@@ -10,11 +13,19 @@ const mockPortfolio = {
   totalCost: 0,
   createdAt: new Date(),
   updatedAt: new Date(),
+      positions: [
+    {
+      id: 'pos-1',
+      symbol: 'AAPL',
+      quantity: 100,
+      avgCost: 150,
+      currentPrice: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      portfolioId: 'portfolio-1',
+    },
+  ],
 }
-
-const mockPositions = [
-  { id: 'pos-1', symbol: 'AAPL', quantity: 100, avgCost: 150 },
-]
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
@@ -34,9 +45,7 @@ describe('Portfolios API', () => {
 
   describe('GET', () => {
     it('should return all portfolios with positions', async () => {
-      vi.mocked(prisma.portfolio.findMany).mockResolvedValue([
-        { ...mockPortfolio, positions: mockPositions } as unknown,
-      ])
+      vi.mocked(prisma.portfolio.findMany).mockResolvedValue([basePortfolio])
 
       const response = await GET()
       const data = await response.json()
@@ -74,24 +83,23 @@ describe('Portfolios API', () => {
 
   describe('POST', () => {
     it('should create a portfolio with valid data', async () => {
-      const requestBody = {
-        name: 'New Portfolio',
-        description: 'My investment portfolio',
-      }
-
-      vi.mocked(prisma.portfolio.create).mockResolvedValue({
-        ...mockPortfolio,
+      const created: PortfolioWithPositions = {
+        ...basePortfolio,
         name: 'New Portfolio',
         description: 'My investment portfolio',
         positions: [],
-      } as unknown)
+      }
+      vi.mocked(prisma.portfolio.create).mockResolvedValue(created)
 
       const request = new Request('http://localhost/api/portfolios', {
         method: 'POST',
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          name: 'New Portfolio',
+          description: 'My investment portfolio',
+        }),
       })
 
-      const response = await POST(request as unknown as NextRequest)
+      const response = await POST(request as NextRequest)
       const data = await response.json()
 
       expect(response.status).toBe(201)
@@ -111,28 +119,27 @@ describe('Portfolios API', () => {
         body: JSON.stringify({ description: 'Test' }),
       })
 
-      const response = await POST(request as unknown as NextRequest)
+      const response = await POST(request as NextRequest)
       expect(response.status).toBe(400)
       const data = await response.json()
       expect(data.error).toBe('Name is required')
     })
 
     it('should create portfolio without description', async () => {
-      const requestBody = { name: 'Portfolio without description' }
-
-      vi.mocked(prisma.portfolio.create).mockResolvedValue({
-        ...mockPortfolio,
+      const created: PortfolioWithPositions = {
+        ...basePortfolio,
         name: 'Portfolio without description',
         description: null,
         positions: [],
-      } as unknown)
+      }
+      vi.mocked(prisma.portfolio.create).mockResolvedValue(created)
 
       const request = new Request('http://localhost/api/portfolios', {
         method: 'POST',
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({ name: 'Portfolio without description' }),
       })
 
-      const response = await POST(request as unknown as NextRequest)
+      const response = await POST(request as NextRequest)
 
       expect(response.status).toBe(201)
       expect(prisma.portfolio.create).toHaveBeenCalledWith({
@@ -152,7 +159,7 @@ describe('Portfolios API', () => {
         body: JSON.stringify({ name: 'Test' }),
       })
 
-      const response = await POST(request as unknown as NextRequest)
+      const response = await POST(request as NextRequest)
       const data = await response.json()
 
       expect(response.status).toBe(500)

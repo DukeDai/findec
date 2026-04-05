@@ -109,4 +109,57 @@ describe('IndicatorCalculator', () => {
     expect(result.rsi!.latest).toBeNull()
     expect(result.macd).not.toBeNull()
   })
+
+  describe('VWAP', () => {
+    it('calculates VWAP with non-zero volume', () => {
+      const calculator = new IndicatorCalculator()
+      const data: HistoricalPrice[] = [
+        { date: new Date('2024-01-01'), open: 100, high: 105, low: 98, close: 102, volume: 1000 },
+        { date: new Date('2024-01-02'), open: 102, high: 108, low: 101, close: 105, volume: 2000 },
+        { date: new Date('2024-01-03'), open: 105, high: 110, low: 104, close: 108, volume: 3000 },
+      ]
+      const result = calculator.calculate(data, { vwap: true })
+      expect(result.vwap).not.toBeNull()
+      expect(result.vwap.length).toBe(3)
+      const firstTP = (data[0].high + data[0].low + data[0].close) / 3
+      expect(result.vwap[0]).toBeCloseTo(firstTP, 2)
+      result.vwap.forEach((v, i) => {
+        expect(v).toBeGreaterThanOrEqual(data[i].low)
+        expect(v).toBeLessThanOrEqual(data[i].high)
+      })
+    })
+
+    it('returns aligned length with data when VWAP enabled', () => {
+      const calculator = new IndicatorCalculator()
+      const result = calculator.calculate(data30, { vwap: true })
+      expect(result.vwap.length).toBe(data30.length)
+      expect(result.vwap[result.vwap.length - 1]).not.toBeNull()
+    })
+
+    it('returns empty array when VWAP disabled', () => {
+      const calculator = new IndicatorCalculator()
+      const result = calculator.calculate(data30, { vwap: false })
+      expect(result.vwap.length).toBe(0)
+    })
+
+    it('returns empty array when data is empty', () => {
+      const calculator = new IndicatorCalculator()
+      const result = calculator.calculate([], { vwap: true })
+      expect(result.vwap.length).toBe(0)
+    })
+
+    it('VWAP increases with rising prices', () => {
+      const calculator = new IndicatorCalculator()
+      const data: HistoricalPrice[] = [
+        { date: new Date('2024-01-01'), open: 100, high: 102, low: 99, close: 101, volume: 1000 },
+        { date: new Date('2024-01-02'), open: 101, high: 103, low: 100, close: 102, volume: 1000 },
+        { date: new Date('2024-01-03'), open: 102, high: 104, low: 101, close: 103, volume: 1000 },
+        { date: new Date('2024-01-04'), open: 103, high: 105, low: 102, close: 104, volume: 1000 },
+      ]
+      const result = calculator.calculate(data, { vwap: true })
+      const first = result.vwap[0]!
+      const last = result.vwap[3]!
+      expect(last).toBeGreaterThan(first)
+    })
+  })
 })
