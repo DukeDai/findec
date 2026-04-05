@@ -2,18 +2,21 @@ import { describe, it, expect } from 'vitest'
 import { ScreeningEngine } from '@/lib/factors/screening-engine'
 import { FactorLibrary } from '@/lib/factors/factor-library'
 import type { ScreeningStrategy } from '@/lib/factors/screening-engine'
+import type { HistoricalPrice } from '@/lib/indicators'
 
 describe('ScreeningEngine', () => {
   const factorLibrary = new FactorLibrary()
   const engine = new ScreeningEngine(factorLibrary)
 
+  const mockHistoricalData: HistoricalPrice[] = [
+    { date: new Date('2024-01-01'), open: 98, high: 102, low: 97, close: 100, volume: 1000000 },
+    { date: new Date('2024-01-02'), open: 100, high: 107, low: 99, close: 105, volume: 1100000 },
+    { date: new Date('2024-01-03'), open: 105, high: 112, low: 104, close: 110, volume: 1200000 },
+    { date: new Date('2024-01-04'), open: 110, high: 111, low: 106, close: 108, volume: 900000 },
+  ]
+
   const mockGetData = async () => ({
-    data: [
-      { close: 100 },
-      { close: 105 },
-      { close: 110 },
-      { close: 108 },
-    ],
+    data: mockHistoricalData,
     symbol: 'TEST',
   })
 

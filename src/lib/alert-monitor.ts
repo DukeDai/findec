@@ -110,7 +110,7 @@ export async function checkAlerts() {
         case 'rsi_overbought':
         case 'rsi_oversold': {
           const historyRes = await fetch(
-            `http://localhost:3000/api/history?symbol=${alert.symbol}&range=3mo`
+            `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/history?symbol=${alert.symbol}&range=3mo`
           )
           if (historyRes.ok) {
             const historyData = await historyRes.json()
@@ -122,6 +122,11 @@ export async function checkAlerts() {
                 ? rsiValue > threshold
                 : rsiValue < threshold
             }
+          } else {
+            logger.warn(`Failed to fetch history for RSI alert: ${alert.symbol}`, {
+              status: historyRes.status,
+              alertId: alert.id,
+            })
           }
           break
         }
