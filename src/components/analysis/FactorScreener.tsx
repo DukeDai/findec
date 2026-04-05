@@ -1,10 +1,83 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { Play, TrendingUp, TrendingDown, Activity, DollarSign } from 'lucide-react'
+import { Play, TrendingUp, TrendingDown, Activity, DollarSign, BarChart3, Settings2 } from 'lucide-react'
 import { ConceptTooltip } from '@/components/ui/concept-tooltip'
-import { MetricCard } from '@/components/ui/metric-explanation'
+import { StrategyTemplates } from '@/components/factors/StrategyTemplates'
+import { ScreeningStrategy, ScreeningRule } from '@/lib/factors/screening-engine'
+import { FactorCorrelationHeatmap } from '@/components/factors/FactorCorrelationHeatmap'
+import { FactorScoringPanel, ScoringMethod } from '@/components/factors/FactorScoringPanel'
+
+import { FactorEffectivenessPanel } from '@/components/factors/FactorEffectiveness'
+
+function FactorContributionChart({ contributions }: { contributions: { factorId: string; contribution: number; avgScore: number }[] }) {
+  if (!contributions || contributions.length === 0) return null
+  const maxContribution = Math.max(...contributions.map((c) => c.contribution))
+  return (
+    <div className="rounded-lg border bg-muted/50 p-4">
+      <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
+        <BarChart3 className="w-4 h-4" />
+        因子贡献度分析
+      </h3>
+      <div className="space-y-3">
+        {contributions.slice(0, 8).map((item) => (
+          <div key={item.factorId} className="flex items-center gap-3">
+            <div className="w-24 text-xs text-muted-foreground truncate">{item.factorId}</div>
+            <div className="flex-1 h-6 bg-background rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary/80 transition-all duration-300"
+                style={{ width: `${(item.contribution / maxContribution) * 100}%` }}
+              />
+            </div>
+            <div className="w-16 text-right text-xs font-medium">{item.contribution.toFixed(1)}%</div>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground mt-4">
+        贡献度基于因子方差计算，显示每个因子对总分差异的贡献比例
+      </p>
+    </div>
+  )
+}
+
+function MethodComparisonPanel({ comparison }: { comparison: { weightedRankCorrelation: number; rankThresholdCorrelation: number } }) {
+  const formatCorrelation = (corr: number) => {
+    const absCorr = Math.abs(corr)
+    if (absCorr > 0.8) return { text: '高度相关', color: 'text-green-500' }
+    if (absCorr > 0.5) return { text: '中度相关', color: 'text-yellow-500' }
+    if (absCorr > 0.3) return { text: '弱相关', color: 'text-orange-500' }
+    return { text: '几乎无关', color: 'text-red-500' }
+  }
+  const weightedRank = formatCorrelation(comparison.weightedRankCorrelation)
+  const rankThreshold = formatCorrelation(comparison.rankThresholdCorrelation)
+  return (
+    <div className="rounded-lg border bg-muted/50 p-4">
+      <h3 className="text-sm font-medium mb-3">评分方法相关性分析</h3>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">加权求和 vs 排名求和</span>
+          <div className="flex items-center gap-2">
+            <span className={`text-sm font-medium ${weightedRank.color}`}>
+              {comparison.weightedRankCorrelation.toFixed(3)}
+            </span>
+            <span className={`text-xs ${weightedRank.color}`}>({weightedRank.text})</span>
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">排名求和 vs 阈值计数</span>
+          <div className="flex items-center gap-2">
+            <span className={`text-sm font-medium ${rankThreshold.color}`}>
+              {comparison.rankThresholdCorrelation.toFixed(3)}
+            </span>
+            <span className={`text-xs ${rankThreshold.color}`}>({rankThreshold.text})</span>
+          </div>
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground mt-3">相关性越高，不同评分方法的结果越一致</p>
+    </div>
+  )
+}
 
 const FACTOR_CONCEPTS: Record<string, { name: string; description: string; interpretation: string }> = {
   '市净率(PB)': {
@@ -114,13 +187,25 @@ const PRESET_STRATEGIES: FactorStrategy[] = [
 
 const DEFAULT_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'JPM']
 
+type TabType = 'screen' | 'analysis'
+
 export function FactorScreener() {
+  const [activeTab, setActiveTab] = useState<TabType>('screen')
   const [strategies, setStrategies] = useState<FactorStrategy[]>([])
   const [selectedStrategy, setSelectedStrategy] = useState<FactorStrategy | null>(null)
   const [results, setResults] = useState<ScreeningResult[]>([])
   const [loading, setLoading] = useState(false)
   const [symbols, setSymbols] = useState<string[]>(DEFAULT_SYMBOLS)
   const [customSymbols, setCustomSymbols] = useState('')
+  const [showCorrelation, setShowCorrelation] = useState(false)
+  const [scoringMethod, setScoringMethod] = useState<ScoringMethod>('weighted_sum')
+  const [factorWeights, setFactorWeights] = useState<{ factorId: string; weight: number; label: string }[]>([])
+  const [showScoringPanel, setShowScoringPanel] = useState(false)
+  const [orthogonalize, setOrthogonalize] = useState(false)
+  const [optimizationResult, setOptimizationResult] = useState<{
+    factorContributions: { factorId: string; contribution: number; avgScore: number }[];
+    methodComparison?: { weightedRankCorrelation: number; rankThresholdCorrelation: number };
+  } | null>(null)
 
   const loadStrategies = async () => {
     try {
@@ -138,17 +223,34 @@ export function FactorScreener() {
     if (!selectedStrategy) return
     setLoading(true)
     setResults([])
+    setOptimizationResult(null)
     try {
-      const res = await fetch('/api/factors/screen', {
+      const res = await fetch('/api/factors/optimize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          strategyId: selectedStrategy.id,
-          symbols: symbols 
+        body: JSON.stringify({
+          strategy: {
+            id: selectedStrategy.id,
+            name: selectedStrategy.name,
+            rules: selectedStrategy.rules.map((r) => ({
+              factorId: r.field,
+              operator: r.operator,
+              value: r.value,
+              weight: r.weight,
+            })),
+            scoringMethod,
+          },
+          symbols,
+          scoringMethod,
+          orthogonalize,
         }),
       })
       const data = await res.json()
-      setResults(data.results || [])
+      setOptimizationResult({
+        factorContributions: data.factorContributions || [],
+        methodComparison: data.methodComparison,
+      })
+      setResults(data.topSymbols || [])
     } catch (error) {
       console.error('Failed to run screen:', error)
     } finally {
@@ -163,12 +265,50 @@ export function FactorScreener() {
     }
   }
 
+  const handleApplyTemplate = (strategy: ScreeningStrategy) => {
+    const convertedStrategy: FactorStrategy = {
+      id: strategy.id || `template-${Date.now()}`,
+      name: strategy.name,
+      description: '从模板导入的策略',
+      rules: strategy.rules.map((rule: ScreeningRule) => ({
+        field: rule.factorId,
+        operator: rule.operator,
+        value: Array.isArray(rule.value) ? rule.value[0] : rule.value,
+        weight: rule.weight,
+      })),
+    }
+    setSelectedStrategy(convertedStrategy)
+
+    const weights = strategy.rules.map(rule => ({
+      factorId: rule.factorId,
+      weight: rule.weight,
+      label: rule.factorId,
+    }))
+    setFactorWeights(weights)
+  }
+
+  const handleStrategySelect = (strategy: FactorStrategy) => {
+    setSelectedStrategy(strategy)
+
+    const weights = strategy.rules.map(rule => ({
+      factorId: rule.field,
+      weight: rule.weight || 1,
+      label: rule.field,
+    }))
+    setFactorWeights(weights)
+  }
+
+  const handleScoringChange = useCallback((config: { method: ScoringMethod; weights: { factorId: string; weight: number; label?: string }[] }) => {
+    setScoringMethod(config.method)
+    setFactorWeights(config.weights.map(w => ({ ...w, label: w.label || w.factorId })))
+  }, [])
+
   const renderFactorLabel = (field: string) => {
     const concept = FACTOR_CONCEPTS[field]
     const label = field
-    
+
     if (!concept) return <span>{label}</span>
-    
+
     return (
       <ConceptTooltip
         concept={field}
@@ -183,11 +323,45 @@ export function FactorScreener() {
 
   return (
     <div className="space-y-6">
+      {showCorrelation && (
+        <FactorCorrelationHeatmap onClose={() => setShowCorrelation(false)} />
+      )}
+
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          onClick={() => setShowScoringPanel(!showScoringPanel)}
+          className="gap-2"
+        >
+          <Settings2 className="w-4 h-4" />
+          {showScoringPanel ? '隐藏评分设置' : '评分设置'}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => setShowCorrelation(!showCorrelation)}
+          className="gap-2"
+        >
+          <BarChart3 className="w-4 h-4" />
+          {showCorrelation ? '隐藏相关性分析' : '相关性分析'}
+        </Button>
+      </div>
+
+      <StrategyTemplates onApply={handleApplyTemplate} />
+
+      {showScoringPanel && (
+        <FactorScoringPanel
+          initialMethod={scoringMethod}
+          initialWeights={factorWeights}
+          onScoringChange={handleScoringChange}
+          defaultExpanded={true}
+        />
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {PRESET_STRATEGIES.map((strategy) => (
           <button
             key={strategy.id}
-            onClick={() => setSelectedStrategy(strategy)}
+            onClick={() => handleStrategySelect(strategy)}
             className={`p-4 rounded-lg border text-left transition-colors ${
               selectedStrategy?.id === strategy.id
                 ? 'border-primary bg-primary/5'
@@ -213,18 +387,44 @@ export function FactorScreener() {
 
       {selectedStrategy && (
         <div className="p-4 rounded-lg border bg-muted/50">
-          <p className="text-sm font-medium mb-2">筛选条件</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium">筛选条件</p>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+              {scoringMethod === 'weighted_sum' ? '加权求和' :
+               scoringMethod === 'rank_sum' ? '分位排名' : '阈值计数'}
+            </span>
+          </div>
           <div className="flex flex-wrap gap-2">
             {selectedStrategy.rules.map((rule, i) => (
               <span key={i} className="text-xs px-2 py-1 rounded bg-background border">
                 {renderFactorLabel(rule.field)} {rule.operator} {rule.value} (权重{rule.weight})
               </span>
             ))}
+           </div>
+         </div>
+       )}
+
+      {selectedStrategy && (
+        <div className="p-4 rounded-lg border bg-muted/50">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="orthogonalize"
+              checked={orthogonalize}
+              onChange={(e) => setOrthogonalize(e.target.checked)}
+              className="w-4 h-4 rounded border"
+            />
+            <label htmlFor="orthogonalize" className="text-sm cursor-pointer font-medium">
+              正交化处理
+            </label>
+            <span className="text-xs text-muted-foreground">
+              消除因子间的多重共线性
+            </span>
           </div>
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
+       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium">股票范围</label>
         <div className="flex gap-2">
           <input
@@ -243,8 +443,8 @@ export function FactorScreener() {
         </p>
       </div>
 
-      <Button 
-        onClick={runScreen} 
+      <Button
+        onClick={runScreen}
         disabled={!selectedStrategy || loading}
         className="w-full"
         size="lg"
@@ -288,6 +488,14 @@ export function FactorScreener() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {optimizationResult?.factorContributions && (
+        <FactorContributionChart contributions={optimizationResult.factorContributions} />
+      )}
+
+      {optimizationResult?.methodComparison && (
+        <MethodComparisonPanel comparison={optimizationResult.methodComparison} />
       )}
 
       {results.length === 0 && !loading && selectedStrategy && (
