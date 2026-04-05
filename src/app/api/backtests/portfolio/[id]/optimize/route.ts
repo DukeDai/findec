@@ -21,7 +21,7 @@ export async function POST(
 
     if (!searchParams || !Array.isArray(searchParams) || searchParams.length === 0) {
       return NextResponse.json(
-        { error: '请提供搜索参数' },
+        { error: '请提供搜索参数', code: 'PARAMS_REQUIRED' },
         { status: 400 }
       )
     }
@@ -29,7 +29,7 @@ export async function POST(
     const plan = await prisma.portfolioBacktestPlan.findUnique({ where: { id } })
     if (!plan) {
       return NextResponse.json(
-        { error: '回测计划不存在' },
+        { error: '回测计划不存在', code: 'BACKTEST_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -95,7 +95,7 @@ export async function POST(
   } catch (error) {
     console.error('Grid search optimization error:', error)
     return NextResponse.json(
-      { error: '参数优化失败' },
+      { error: '参数优化失败', code: 'OPTIMIZE_ERROR' },
       { status: 500 }
     )
   }

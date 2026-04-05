@@ -128,7 +128,7 @@ export async function GET() {
   } catch (error) {
     console.error("Cache warming error:", error);
     return NextResponse.json(
-      { error: "Failed to warm cache" },
+      { error: "缓存预热失败", code: "CACHE_WARM_ERROR" },
       { status: 500 }
     );
   }

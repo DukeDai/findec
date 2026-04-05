@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendAlertEmail } from '@/lib/realtime/email-notifier'
+import { handleApiError, Errors } from '@/lib/errors'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -11,10 +12,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const { id: alertId } = await params
 
     if (!alertId) {
-      return NextResponse.json(
-        { success: false, error: '预警ID不能为空' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('预警ID不能为空')
     }
 
     const alert = await prisma.alert.findUnique({
@@ -22,10 +20,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     })
 
     if (!alert) {
-      return NextResponse.json(
-        { success: false, error: '预警不存在' },
-        { status: 404 }
-      )
+      throw Errors.notFound('预警不存在')
     }
 
     const userConfig = await prisma.userConfig.findFirst({
@@ -33,18 +28,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     })
 
     if (!userConfig?.email) {
-      return NextResponse.json(
-        { success: false, error: '未配置邮箱或邮件通知未启用' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('未配置邮箱或邮件通知未启用')
     }
 
     const currentPrice = await getCurrentPrice(alert.symbol)
     if (!currentPrice) {
-      return NextResponse.json(
-        { success: false, error: '无法获取当前价格' },
-        { status: 500 }
-      )
+      throw Errors.internal('无法获取当前价格')
     }
 
     const emailSent = await sendAlertEmail({
@@ -67,16 +56,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ success: true })
     }
 
-    return NextResponse.json(
-      { success: false, error: '邮件发送失败' },
-      { status: 500 }
-    )
+    throw Errors.internal('邮件发送失败')
   } catch (error) {
-    console.error('Error sending alert notification:', error)
-    return NextResponse.json(
-      { success: false, error: '发送通知失败' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 

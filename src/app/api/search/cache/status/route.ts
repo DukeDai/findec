@@ -39,7 +39,7 @@ export async function GET() {
   } catch (error) {
     console.error("Cache status error:", error);
     return NextResponse.json(
-      { error: "Failed to get cache status" },
+      { error: "获取缓存状态失败", code: "CACHE_STATUS_ERROR" },
       { status: 500 }
     );
   }

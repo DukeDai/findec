@@ -94,14 +94,14 @@ export async function POST(
 
     if (!plan) {
       return NextResponse.json(
-        { error: '回测计划不存在' },
+        { error: '回测计划不存在', code: 'BACKTEST_NOT_FOUND' },
         { status: 404 }
       )
     }
 
     if (plan.status === 'running') {
       return NextResponse.json(
-        { error: '回测正在运行中' },
+        { error: '回测正在运行中', code: 'BACKTEST_RUNNING' },
         { status: 400 }
       )
     }
@@ -316,7 +316,7 @@ export async function POST(
     })
 
     return NextResponse.json(
-      { error: '执行回测失败' },
+      { error: '执行回测失败', code: 'EXECUTE_ERROR' },
       { status: 500 }
     )
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { MLPricePredictor, TrainingConfig, TrainingMetrics } from '@/lib/ml/price-predictor'
 import { getHistoricalData } from '@/lib/yahoo-finance'
+import { handleApiError, Errors } from '@/lib/errors'
 
 export interface TrainRequest {
   symbols: string[]
@@ -109,17 +110,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { symbols, startDate, endDate, config } = body
 
     if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
-      return NextResponse.json(
-        { error: 'symbols array is required and must not be empty' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('symbols 数组是必填项且不能为空')
     }
 
     if (symbols.length > 10) {
-      return NextResponse.json(
-        { error: 'Maximum 10 symbols allowed per training batch' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('每次训练最多支持 10 个股票')
     }
 
     // Fetch training data
@@ -144,10 +139,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     combinedData.sort((a, b) => a.date.getTime() - b.date.getTime())
 
     if (combinedData.length < 60) {
-      return NextResponse.json(
-        { error: 'Insufficient data for training (minimum 60 days required)' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('训练数据不足（至少需要 60 天）')
     }
 
     // Create and train model
@@ -187,17 +179,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Training error:', error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Training failed',
-        modelVersion: '',
-        metrics: { loss: 0, accuracy: 0, valLoss: 0, valAccuracy: 0 },
-        trainedOn: [],
-        sampleCount: 0,
-      },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

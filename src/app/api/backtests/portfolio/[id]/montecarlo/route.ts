@@ -21,7 +21,7 @@ export async function POST(
     const plan = await prisma.portfolioBacktestPlan.findUnique({ where: { id } })
     if (!plan) {
       return NextResponse.json(
-        { error: '回测计划不存在' },
+        { error: '回测计划不存在', code: 'BACKTEST_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -101,7 +101,7 @@ export async function POST(
   } catch (error) {
     console.error('Monte Carlo simulation error:', error)
     return NextResponse.json(
-      { error: '蒙特卡洛模拟失败' },
+      { error: '蒙特卡洛模拟失败', code: 'MONTECARLO_ERROR' },
       { status: 500 }
     )
   }

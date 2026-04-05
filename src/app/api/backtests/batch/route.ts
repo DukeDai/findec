@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { batchBacktest } from '@/lib/backtest/batch-runner'
+import { handleApiError, Errors } from '@/lib/errors'
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,15 +16,15 @@ export async function POST(request: NextRequest) {
     } = body
 
     if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
-      return NextResponse.json({ error: '股票代码列表不能为空' }, { status: 400 })
+      throw Errors.badRequest('股票代码列表不能为空')
     }
 
     if (symbols.length > 100) {
-      return NextResponse.json({ error: '单次批量回测最多支持 100 个股票' }, { status: 400 })
+      throw Errors.badRequest('单次批量回测最多支持 100 个股票')
     }
 
     if (!startDate || !endDate) {
-      return NextResponse.json({ error: '开始日期和结束日期不能为空' }, { status: 400 })
+      throw Errors.badRequest('开始日期和结束日期不能为空')
     }
 
     const result = await batchBacktest({
@@ -38,10 +39,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result)
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : '批量回测失败' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 

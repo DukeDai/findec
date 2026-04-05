@@ -1,8 +1,27 @@
 "use client"
 
-import { useState } from 'react'
-import { ChartContainer } from '@/components/chart/ChartContainer'
+import { Suspense, useState } from 'react'
 import { Search } from 'lucide-react'
+import dynamic from 'next/dynamic'
+
+const LazyChartContainer = dynamic(
+  () => import('@/components/chart/ChartContainer').then(mod => ({ default: mod.ChartContainer })),
+  {
+    ssr: false,
+    loading: () => <ChartSkeleton />
+  }
+)
+
+function ChartSkeleton() {
+  return (
+    <div className="h-[500px] w-full bg-muted/50 rounded-lg flex items-center justify-center">
+      <div className="flex flex-col items-center gap-2">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <span className="text-sm text-muted-foreground">加载图表中...</span>
+      </div>
+    </div>
+  )
+}
 
 export default function Home() {
   const [symbol, setSymbol] = useState('AAPL')
@@ -41,14 +60,16 @@ export default function Home() {
           </button>
         </form>
 
-        <div className="bg-card rounded-lg border p-6">
-          <h2 className="text-lg font-semibold mb-4">
-            {symbol} - 股价走势
-          </h2>
-          <div className="h-[500px] w-full">
-            <ChartContainer symbol={symbol} />
+        <Suspense fallback={<ChartSkeleton />}>
+          <div className="bg-card rounded-lg border p-6">
+            <h2 className="text-lg font-semibold mb-4">
+              {symbol} - 股价走势
+            </h2>
+            <div className="h-[500px] w-full">
+              <LazyChartContainer symbol={symbol} />
+            </div>
           </div>
-        </div>
+        </Suspense>
       </main>
     </div>
   )

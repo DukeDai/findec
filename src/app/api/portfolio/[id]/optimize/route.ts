@@ -14,7 +14,7 @@ export async function POST(
 
     if (!method || !['risk_parity', 'min_variance', 'max_sharpe', 'equal_weight'].includes(method)) {
       return NextResponse.json(
-        { error: 'Valid method is required (risk_parity, min_variance, max_sharpe, equal_weight)' },
+        { error: '有效的优化方法不能为空', code: 'INVALID_METHOD' },
         { status: 400 }
       )
     }
@@ -29,7 +29,7 @@ export async function POST(
 
     if (!portfolio) {
       return NextResponse.json(
-        { error: 'Portfolio not found' },
+        { error: '组合不存在', code: 'PORTFOLIO_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -137,7 +137,7 @@ export async function POST(
   } catch (error) {
     console.error('Error optimizing portfolio:', error)
     return NextResponse.json(
-      { error: 'Failed to optimize portfolio' },
+      { error: '组合优化失败', code: 'OPTIMIZE_ERROR' },
       { status: 500 }
     )
   }
@@ -160,7 +160,7 @@ export async function GET(
 
     if (!portfolio) {
       return NextResponse.json(
-        { error: 'Portfolio not found' },
+        { error: 'Portfolio not found', code: 'PORTFOLIO_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -201,7 +201,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching optimization options:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch optimization options' },
+      { error: '获取优化选项失败', code: 'FETCH_OPTIONS_ERROR' },
       { status: 500 }
     )
   }

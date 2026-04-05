@@ -5,6 +5,7 @@ import {
   IndicatorConfig,
 } from '@/lib/indicators/calculator'
 import { generateMockHistoricalData } from '@/lib/data/data-source'
+import { handleApiError, Errors } from '@/lib/errors'
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     const indicators = request.nextUrl.searchParams.get('indicators') || 'ma20,rsi'
 
     if (!symbol) {
-      return NextResponse.json({ error: 'Symbol is required' }, { status: 400 })
+      throw Errors.badRequest('股票代码是必填项')
     }
 
     const normalizedSymbol = symbol.toUpperCase()
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (data.length === 0) {
-      return NextResponse.json({ error: 'No data available' }, { status: 404 })
+      throw Errors.notFound('没有可用数据')
     }
 
     const indicatorList = indicators.split(',')
@@ -112,10 +113,6 @@ export async function GET(request: NextRequest) {
       indicators: serializedResult,
     })
   } catch (error) {
-    console.error('Indicators API error:', error)
-    return NextResponse.json(
-      { error: 'Failed to calculate indicators' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

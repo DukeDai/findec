@@ -14,7 +14,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching positions:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch positions' },
+      { error: 'Failed to fetch positions', code: 'FETCH_POSITIONS_FAILED' },
       { status: 500 }
     )
   }
@@ -31,7 +31,7 @@ export async function POST(
 
     if (!symbol || !quantity || !price || !type) {
       return NextResponse.json(
-        { error: 'symbol, quantity, price, and type are required' },
+        { error: 'symbol, quantity, price, and type are required', code: 'POSITION_PARAMS_REQUIRED' },
         { status: 400 }
       )
     }
@@ -42,7 +42,7 @@ export async function POST(
 
     if (!portfolio) {
       return NextResponse.json(
-        { error: 'Portfolio not found' },
+        { error: 'Portfolio not found', code: 'PORTFOLIO_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -86,7 +86,7 @@ export async function POST(
   } catch (error) {
     console.error('Error adding position:', error)
     return NextResponse.json(
-      { error: 'Failed to add position' },
+      { error: 'Failed to add position', code: 'ADD_POSITION_FAILED' },
       { status: 500 }
     )
   }

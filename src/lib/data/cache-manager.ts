@@ -1,5 +1,14 @@
 /**
  * Cache manager with TTL-based expiration for historical data
+ * 
+ * PERFORMANCE NOTES:
+ * - The following Prisma queries could benefit from database indexes:
+ *   1. `prisma.stock.findUnique({ where: { symbol } })` - ensure symbol has unique index
+ *   2. `prisma.historicalData.findMany({ where: { stockSymbol }, orderBy: { date: 'asc' } })` 
+ *      - compound index on (stockSymbol, date) for efficient filtering and sorting
+ *   3. `prisma.historicalData.findFirst({ where: { stockSymbol }, orderBy: { createdAt: 'desc' } })`
+ *      - index on (stockSymbol, createdAt) for latest record lookups
+ *   4. The composite unique key `stockSymbol_date` on HistoricalData is already indexed by Prisma
  */
 
 import { prisma } from '@/lib/prisma';

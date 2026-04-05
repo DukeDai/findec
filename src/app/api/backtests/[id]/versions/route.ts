@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     if (!backtest) {
       return NextResponse.json(
-        { error: '回测不存在' },
+        { error: '回测不存在', code: 'BACKTEST_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('Error fetching backtest versions:', error)
     return NextResponse.json(
-      { error: '获取版本历史失败' },
+      { error: '获取版本历史失败', code: 'FETCH_VERSIONS_FAILED' },
       { status: 500 }
     )
   }
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (!backtest) {
       return NextResponse.json(
-        { error: '回测不存在' },
+        { error: '回测不存在', code: 'BACKTEST_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('Error creating backtest version:', error)
     return NextResponse.json(
-      { error: '创建版本失败' },
+      { error: '创建版本失败', code: 'CREATE_VERSION_FAILED' },
       { status: 500 }
     )
   }

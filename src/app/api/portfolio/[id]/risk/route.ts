@@ -25,7 +25,7 @@ export async function GET(
 
     if (!portfolio) {
       return NextResponse.json(
-        { error: 'Portfolio not found' },
+        { error: '组合不存在', code: 'PORTFOLIO_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -84,7 +84,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching portfolio risk:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch portfolio risk' },
+      { error: '获取组合风险失败', code: 'RISK_FETCH_ERROR' },
       { status: 500 }
     )
   }
@@ -101,7 +101,7 @@ export async function POST(
 
     if (!thresholds) {
       return NextResponse.json(
-        { error: 'Thresholds are required' },
+        { error: '阈值参数不能为空', code: 'MISSING_THRESHOLDS' },
         { status: 400 }
       )
     }
@@ -125,7 +125,7 @@ export async function POST(
   } catch (error) {
     console.error('Error updating risk thresholds:', error)
     return NextResponse.json(
-      { error: 'Failed to update risk thresholds' },
+      { error: '更新风险阈值失败', code: 'THRESHOLD_UPDATE_ERROR' },
       { status: 500 }
     )
   }

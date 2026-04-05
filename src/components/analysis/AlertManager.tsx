@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
+import { Info, Sparkles } from 'lucide-react'
 import { io, Socket } from 'socket.io-client'
 
 interface Alert {
@@ -22,7 +23,17 @@ const CONDITIONS = [
   { id: 'change_below', name: '跌幅超过', unit: '%' },
   { id: 'rsi_overbought', name: 'RSI 超买', unit: '' },
   { id: 'rsi_oversold', name: 'RSI 超卖', unit: '' },
+  { id: 'volume_spike', name: '成交量放大', unit: '倍' },
 ]
+
+interface AlertRecommendation {
+  priceChangeThreshold: number
+  volumeSpikeThreshold: number
+  rsiOverbought: number
+  rsiOversold: number
+  atrMultiplier: number
+  reasoning: string
+}
 
 export function AlertManager() {
   const [alerts, setAlerts] = useState<Alert[]>([])
@@ -34,6 +45,10 @@ export function AlertManager() {
     targetValue: '',
     message: '',
   })
+
+  const [recommendation, setRecommendation] = useState<AlertRecommendation | null>(null)
+  const [recommending, setRecommending] = useState(false)
+  const [showReasoning, setShowReasoning] = useState(false)
 
   const socketRef = useRef<Socket | null>(null)
   const [wsConnected, setWsConnected] = useState(false)
@@ -174,6 +189,40 @@ export function AlertManager() {
 
   const selectedCondition = CONDITIONS.find(c => c.id === formData.condition)
 
+  const getSmartRecommendation = async () => {
+    if (!formData.symbol) {
+      alert('请先输入股票代码')
+      return
+    }
+
+    setRecommending(true)
+    try {
+      const res = await fetch(`/api/alerts/recommend?symbol=${formData.symbol.toUpperCase()}`)
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || '获取推荐失败')
+      }
+      const data: AlertRecommendation = await res.json()
+      setRecommendation(data)
+
+      // 根据当前选择的条件类型自动填充合适的推荐值
+      if (formData.condition === 'change_above' || formData.condition === 'change_below') {
+        setFormData(prev => ({ ...prev, targetValue: data.priceChangeThreshold.toString() }))
+      } else if (formData.condition === 'rsi_overbought') {
+        setFormData(prev => ({ ...prev, targetValue: data.rsiOverbought.toString() }))
+      } else if (formData.condition === 'rsi_oversold') {
+        setFormData(prev => ({ ...prev, targetValue: data.rsiOversold.toString() }))
+      } else if (formData.condition === 'volume_spike') {
+        setFormData(prev => ({ ...prev, targetValue: data.volumeSpikeThreshold.toString() }))
+      }
+    } catch (error) {
+      console.error('获取智能推荐失败:', error)
+      alert(error instanceof Error ? error.message : '获取智能推荐失败')
+    } finally {
+      setRecommending(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
       {latestAlert && (
@@ -210,7 +259,46 @@ export function AlertManager() {
 
       {showForm && (
         <div className="rounded-lg border p-4 space-y-3 bg-muted/50">
-          <h3 className="font-medium">新建价格预警</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="font-medium">新建价格预警</h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={getSmartRecommendation}
+              disabled={recommending || !formData.symbol}
+              className="flex items-center gap-1"
+            >
+              <Sparkles className="w-4 h-4" />
+              {recommending ? '计算中...' : '智能推荐'}
+            </Button>
+          </div>
+
+          {recommendation && (
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-3 space-y-2">
+              <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                <Info className="w-4 h-4" />
+                <span className="text-sm font-medium">基于历史波动率的智能推荐</span>
+                <button
+                  onClick={() => setShowReasoning(!showReasoning)}
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline ml-auto"
+                >
+                  {showReasoning ? '收起详情' : '查看详情'}
+                </button>
+              </div>
+              <div className="text-sm text-blue-600 dark:text-blue-400 grid grid-cols-2 gap-2">
+                <div>价格变动阈值: <strong>{recommendation.priceChangeThreshold}%</strong></div>
+                <div>成交量放大: <strong>{recommendation.volumeSpikeThreshold}倍</strong></div>
+                <div>RSI超买: <strong>{recommendation.rsiOverbought}</strong></div>
+                <div>RSI超卖: <strong>{recommendation.rsiOversold}</strong></div>
+              </div>
+              {showReasoning && (
+                <div className="text-xs text-blue-600 dark:text-blue-400 whitespace-pre-line border-t border-blue-200 dark:border-blue-800 pt-2 mt-2">
+                  {recommendation.reasoning}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm text-muted-foreground">股票代码</label>
@@ -260,7 +348,11 @@ export function AlertManager() {
             <Button onClick={createAlert} disabled={!formData.symbol || !formData.targetValue}>
               创建
             </Button>
-            <Button variant="outline" onClick={() => setShowForm(false)}>取消</Button>
+            <Button variant="outline" onClick={() => {
+              setShowForm(false)
+              setRecommendation(null)
+              setShowReasoning(false)
+            }}>取消</Button>
           </div>
         </div>
       )}

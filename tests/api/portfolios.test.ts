@@ -77,7 +77,7 @@ describe('Portfolios API', () => {
       const data = await response.json()
 
       expect(response.status).toBe(500)
-      expect(data.error).toBe('Failed to fetch portfolios')
+      expect(data.error).toBe('内部服务器错误')
     })
   })
 
@@ -122,7 +122,7 @@ describe('Portfolios API', () => {
       const response = await POST(request as NextRequest)
       expect(response.status).toBe(400)
       const data = await response.json()
-      expect(data.error).toBe('Name is required')
+      expect(data.error).toBe('名称为必填项')
     })
 
     it('should create portfolio without description', async () => {
@@ -163,7 +163,7 @@ describe('Portfolios API', () => {
       const data = await response.json()
 
       expect(response.status).toBe(500)
-      expect(data.error).toBe('Failed to create portfolio')
+      expect(data.error).toBe('内部服务器错误')
     })
   })
 })

@@ -27,7 +27,7 @@ export async function POST(
     })
 
     if (!backtest) {
-      return NextResponse.json({ error: 'Backtest not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Backtest not found', code: 'BACKTEST_NOT_FOUND' }, { status: 404 })
     }
 
     const symbols = backtest.symbols.split(',').map(s => s.trim())
@@ -130,7 +130,7 @@ export async function POST(
   } catch (error) {
     console.error('Error executing backtest:', error)
     return NextResponse.json(
-      { error: 'Failed to execute backtest' },
+      { error: 'Failed to execute backtest', code: 'EXECUTE_ERROR' },
       { status: 500 }
     )
   }

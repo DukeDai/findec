@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getHistoricalData } from '@/lib/yahoo-finance'
 import { FactorLibrary } from '@/lib/factors/factor-library'
 import { ScreeningEngine, ScreeningStrategy, ScreeningRule } from '@/lib/factors/screening-engine'
+import { handleApiError, Errors } from '@/lib/errors'
 import type { Prisma } from '@prisma/client'
 
 const factorLibrary = new FactorLibrary()
@@ -46,17 +47,11 @@ export async function POST(request: NextRequest) {
     const { strategyId, symbols, scoringMethod = 'weighted_sum' } = body
 
     if (!strategyId || !symbols || !Array.isArray(symbols)) {
-      return NextResponse.json(
-        { error: 'strategyId and symbols array are required' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('strategyId 和 symbols 数组是必填项')
     }
 
     if (!['weighted_sum', 'rank_sum', 'threshold_count'].includes(scoringMethod)) {
-      return NextResponse.json(
-        { error: 'Invalid scoringMethod. Must be weighted_sum, rank_sum, or threshold_count' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('无效的 scoringMethod，必须是 weighted_sum、rank_sum 或 threshold_count')
     }
 
     const strategy = await prisma.factorStrategy.findUnique({
@@ -65,10 +60,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!strategy) {
-      return NextResponse.json(
-        { error: 'Strategy not found' },
-        { status: 404 }
-      )
+      throw Errors.notFound('策略不存在')
     }
 
     const screeningStrategy: ScreeningStrategy = {
@@ -85,7 +77,7 @@ export async function POST(request: NextRequest) {
         try {
           const data = await getHistoricalData(symbol, '1y')
           return { data, symbol }
-        } catch (error) {
+        } catch {
           console.warn(`Yahoo Finance failed for ${symbol}, using mock data`)
           return { data: generateMockData(), symbol }
         }
@@ -120,10 +112,6 @@ export async function POST(request: NextRequest) {
       results: savedResults.sort((a, b) => b.score - a.score),
     })
   } catch (error) {
-    console.error('Error running screening:', error)
-    return NextResponse.json(
-      { error: 'Failed to run screening' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

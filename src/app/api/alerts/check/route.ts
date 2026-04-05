@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { handleApiError } from '@/lib/errors'
 
 export async function POST() {
   try {
@@ -65,10 +66,6 @@ export async function POST() {
       alerts: triggeredAlerts,
     })
   } catch (error) {
-    console.error('Error checking alerts:', error)
-    return NextResponse.json(
-      { error: 'Failed to check alerts' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

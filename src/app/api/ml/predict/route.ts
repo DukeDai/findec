@@ -91,14 +91,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
       return NextResponse.json(
-        { error: 'symbols array is required and must not be empty' },
+        { error: 'symbols array is required and must not be empty', code: 'SYMBOLS_REQUIRED' },
         { status: 400 }
       )
     }
 
     if (symbols.length > 50) {
       return NextResponse.json(
-        { error: 'Maximum 50 symbols allowed per prediction batch' },
+        { error: 'Maximum 50 symbols allowed per prediction batch', code: 'TOO_MANY_SYMBOLS' },
         { status: 400 }
       )
     }
@@ -155,7 +155,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       {
         success: false,
         predictions: [],
-        error: error instanceof Error ? error.message : 'Prediction failed',
+        error: '预测失败',
+        code: 'PREDICTION_ERROR',
       },
       { status: 500 }
     )

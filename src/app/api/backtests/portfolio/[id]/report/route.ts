@@ -127,14 +127,14 @@ export async function GET(
 
     if (!plan) {
       return NextResponse.json(
-        { error: '回测计划不存在' },
+        { error: '回测计划不存在', code: 'BACKTEST_NOT_FOUND' },
         { status: 404 }
       )
     }
 
     if (plan.status !== 'completed') {
       return NextResponse.json(
-        { error: '回测尚未完成' },
+        { error: '回测尚未完成', code: 'BACKTEST_NOT_COMPLETED' },
         { status: 400 }
       )
     }
@@ -202,7 +202,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching backtest report:', error)
     return NextResponse.json(
-      { error: '获取回测报告失败' },
+      { error: '获取回测报告失败', code: 'REPORT_ERROR' },
       { status: 500 }
     )
   }

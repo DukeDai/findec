@@ -12,12 +12,12 @@ export async function GET(
     const { id } = await params
     const summary = await getAccount(id)
     if (!summary) {
-      return NextResponse.json({ error: 'Account not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Account not found', code: 'ACCOUNT_NOT_FOUND' }, { status: 404 })
     }
     return NextResponse.json(summary)
   } catch (error) {
     logger.error('Failed to get paper account', error)
-    return NextResponse.json({ error: 'Failed to fetch account' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch account', code: 'FETCH_ACCOUNT_FAILED' }, { status: 500 })
   }
 }
 
@@ -32,6 +32,6 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   } catch (error) {
     logger.error('Failed to delete paper account', error)
-    return NextResponse.json({ error: 'Failed to delete account' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete account', code: 'DELETE_ACCOUNT_FAILED' }, { status: 500 })
   }
 }

@@ -14,7 +14,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     if (!strategy) {
       return NextResponse.json(
-        { error: '策略不存在' },
+        { error: '策略不存在', code: 'STRATEGY_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('Error fetching strategy:', error)
     return NextResponse.json(
-      { error: '获取策略失败' },
+      { error: '获取策略失败', code: 'FETCH_STRATEGY_FAILED' },
       { status: 500 }
     )
   }
@@ -41,7 +41,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     if (!existingStrategy) {
       return NextResponse.json(
-        { error: '策略不存在' },
+        { error: '策略不存在', code: 'STRATEGY_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -60,7 +60,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('Error updating strategy:', error)
     return NextResponse.json(
-      { error: '更新策略失败' },
+      { error: '更新策略失败', code: 'UPDATE_STRATEGY_FAILED' },
       { status: 500 }
     )
   }
@@ -75,7 +75,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     if (!existingStrategy) {
       return NextResponse.json(
-        { error: '策略不存在' },
+        { error: '策略不存在', code: 'STRATEGY_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -88,7 +88,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('Error deleting strategy:', error)
     return NextResponse.json(
-      { error: '删除策略失败' },
+      { error: '删除策略失败', code: 'DELETE_STRATEGY_FAILED' },
       { status: 500 }
     )
   }

@@ -73,7 +73,7 @@ describe('Backtests API', () => {
       const data = await response.json()
 
       expect(response.status).toBe(500)
-      expect(data.error).toBe('Failed to fetch backtests')
+      expect(data.error).toBe('内部服务器错误')
     })
   })
 
@@ -127,7 +127,7 @@ describe('Backtests API', () => {
         const response = await POST(request as unknown as NextRequest)
         expect(response.status).toBe(400)
         const data = await response.json()
-        expect(data.error).toBe('Missing required fields')
+        expect(data.error).toBe('缺少必填字段')
       }
     })
 
@@ -179,7 +179,7 @@ describe('Backtests API', () => {
       const data = await response.json()
 
       expect(response.status).toBe(500)
-      expect(data.error).toBe('Failed to create backtest')
+      expect(data.error).toBe('内部服务器错误')
     })
   })
 })

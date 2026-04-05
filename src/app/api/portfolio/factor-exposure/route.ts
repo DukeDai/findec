@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     const { positions } = body
 
     if (!positions || !Array.isArray(positions) || positions.length === 0) {
-      return NextResponse.json({ error: '持仓数据不能为空' }, { status: 400 })
+      return NextResponse.json({ error: '持仓数据不能为空', code: 'POSITIONS_REQUIRED' }, { status: 400 })
     }
 
     const normalized = positions.map((p: { symbol: string; weight?: number; shares?: number; price?: number }) => ({
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : '因子暴露度分析失败' },
+      { error: '因子暴露度分析失败', code: 'EXPOSURE_ERROR' },
       { status: 500 }
     )
   }
@@ -45,7 +45,7 @@ export async function PUT(request: NextRequest) {
     const { symbol } = body
 
     if (!symbol) {
-      return NextResponse.json({ error: '股票代码不能为空' }, { status: 400 })
+      return NextResponse.json({ error: '股票代码不能为空', code: 'SYMBOL_REQUIRED' }, { status: 400 })
     }
 
     const profile = getStockFactorProfile(symbol)
@@ -53,7 +53,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ profile })
   } catch (error) {
     return NextResponse.json(
-      { error: '获取因子画像失败' },
+      { error: '获取因子画像失败', code: 'FACTOR_PROFILE_ERROR' },
       { status: 500 }
     )
   }

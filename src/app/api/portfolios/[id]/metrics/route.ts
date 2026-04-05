@@ -11,7 +11,7 @@ export async function GET(
 
     if (!metrics) {
       return NextResponse.json(
-        { error: 'Portfolio not found' },
+        { error: 'Portfolio not found', code: 'PORTFOLIO_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -20,7 +20,7 @@ export async function GET(
   } catch (error) {
     console.error('Error calculating portfolio metrics:', error)
     return NextResponse.json(
-      { error: 'Failed to calculate metrics' },
+      { error: 'Failed to calculate metrics', code: 'METRICS_ERROR' },
       { status: 500 }
     )
   }

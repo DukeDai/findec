@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { FactorMetricsCalculator } from '@/lib/factors/factor-metrics'
 import { FactorLibrary } from '@/lib/factors/factor-library'
+import { handleApiError, Errors } from '@/lib/errors'
 
 const factorLibrary = new FactorLibrary()
 const metricsCalculator = new FactorMetricsCalculator()
@@ -164,21 +165,14 @@ export async function GET(request: NextRequest) {
     }
 
     if (factorId && effectivenessData.length === 0) {
-      return NextResponse.json(
-        { error: 'Factor not found or insufficient data' },
-        { status: 404 }
-      )
+      throw Errors.notFound('因子不存在或数据不足')
     }
 
     return NextResponse.json({
       factors: effectivenessData,
     })
   } catch (error) {
-    console.error('Error fetching factor effectiveness:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch factor effectiveness data' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -188,10 +182,7 @@ export async function POST(request: NextRequest) {
     const { factorIds } = body
 
     if (!factorIds || !Array.isArray(factorIds) || factorIds.length === 0) {
-      return NextResponse.json(
-        { error: 'factorIds array is required' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('factorIds 数组是必填项')
     }
 
     const allFactors = factorLibrary.getAllFactors()
@@ -213,10 +204,6 @@ export async function POST(request: NextRequest) {
       factors: effectivenessData,
     })
   } catch (error) {
-    console.error('Error analyzing factor effectiveness:', error)
-    return NextResponse.json(
-      { error: 'Failed to analyze factor effectiveness' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { handleApiError, Errors } from '@/lib/errors'
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,10 +8,7 @@ export async function POST(request: NextRequest) {
     const { name, symbols, startDate, endDate, initialCapital } = body
 
     if (!name || !symbols || !startDate || !endDate || !initialCapital) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('缺少必填字段')
     }
 
     const backtest = await prisma.backtestPlan.create({
@@ -25,11 +23,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(backtest, { status: 201 })
   } catch (error) {
-    console.error('Error creating backtest:', error)
-    return NextResponse.json(
-      { error: 'Failed to create backtest' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -45,10 +39,6 @@ export async function GET() {
     })
     return NextResponse.json(backtests)
   } catch (error) {
-    console.error('Error fetching backtests:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch backtests' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

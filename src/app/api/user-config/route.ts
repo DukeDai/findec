@@ -25,7 +25,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching user config:', error)
     return NextResponse.json(
-      { error: '获取配置失败' },
+      { error: '获取配置失败', code: 'FETCH_CONFIG_FAILED' },
       { status: 500 }
     )
   }
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error updating user config:', error)
     return NextResponse.json(
-      { error: '更新配置失败' },
+      { error: '更新配置失败', code: 'UPDATE_CONFIG_FAILED' },
       { status: 500 }
     )
   }
@@ -84,7 +84,7 @@ export async function PATCH(request: NextRequest) {
 
     if (!existing) {
       return NextResponse.json(
-        { error: '配置不存在' },
+        { error: '配置不存在', code: 'CONFIG_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -104,7 +104,7 @@ export async function PATCH(request: NextRequest) {
   } catch (error) {
     console.error('Error patching user config:', error)
     return NextResponse.json(
-      { error: '更新配置失败' },
+      { error: '更新配置失败', code: 'UPDATE_CONFIG_FAILED' },
       { status: 500 }
     )
   }
@@ -118,7 +118,7 @@ export async function PUT(request: NextRequest) {
     if (action === 'test') {
       if (!email) {
         return NextResponse.json(
-          { error: '邮箱地址不能为空' },
+          { error: '邮箱地址不能为空', code: 'EMAIL_REQUIRED' },
           { status: 400 }
         )
       }
@@ -136,13 +136,13 @@ export async function PUT(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: '未知操作' },
+      { error: '未知操作', code: 'UNKNOWN_ACTION' },
       { status: 400 }
     )
   } catch (error) {
     console.error('Error in user config PUT:', error)
     return NextResponse.json(
-      { error: '操作失败' },
+      { error: '操作失败', code: 'ACTION_FAILED' },
       { status: 500 }
     )
   }

@@ -131,14 +131,14 @@ export async function GET(request: NextRequest) {
 
     if (!query) {
       return NextResponse.json(
-        { error: "Query parameter 'q' is required" },
+        { error: "Query parameter 'q' is required", code: 'QUERY_REQUIRED' },
         { status: 400 }
       );
     }
 
     if (query.length < 1 || query.length > 50) {
       return NextResponse.json(
-        { error: "Query must be between 1 and 50 characters" },
+        { error: "Query must be between 1 and 50 characters", code: 'INVALID_QUERY' },
         { status: 400 }
       );
     }
@@ -239,7 +239,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Search API error:", error);
     return NextResponse.json(
-      { error: "Failed to perform search" },
+      { error: "Failed to perform search", code: 'SEARCH_FAILED' },
       { status: 500 }
     );
   }

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     if (!backtest) {
       return NextResponse.json(
-        { error: '回测不存在' },
+        { error: '回测不存在', code: 'BACKTEST_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     if (!version) {
       return NextResponse.json(
-        { error: '版本不存在' },
+        { error: '版本不存在', code: 'VERSION_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('Error fetching backtest version:', error)
     return NextResponse.json(
-      { error: '获取版本详情失败' },
+      { error: '获取版本详情失败', code: 'FETCH_VERSION_FAILED' },
       { status: 500 }
     )
   }
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (action !== 'restore') {
       return NextResponse.json(
-        { error: '无效的操作' },
+        { error: '无效的操作', code: 'INVALID_ACTION' },
         { status: 400 }
       )
     }
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (!backtest) {
       return NextResponse.json(
-        { error: '回测不存在' },
+        { error: '回测不存在', code: 'BACKTEST_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (!version) {
       return NextResponse.json(
-        { error: '版本不存在' },
+        { error: '版本不存在', code: 'VERSION_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('Error restoring backtest version:', error)
     return NextResponse.json(
-      { error: '恢复版本失败' },
+      { error: '恢复版本失败', code: 'RESTORE_VERSION_FAILED' },
       { status: 500 }
     )
   }

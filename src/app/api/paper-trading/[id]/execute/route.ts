@@ -29,6 +29,6 @@ export async function POST(
     })
   } catch (error) {
     logger.error('Failed to execute paper orders', error)
-    return NextResponse.json({ error: 'Failed to execute orders' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to execute orders', code: 'EXECUTE_ORDERS_FAILED' }, { status: 500 })
   }
 }

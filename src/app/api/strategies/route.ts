@@ -12,7 +12,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching strategies:', error)
     return NextResponse.json(
-      { error: '获取策略列表失败' },
+      { error: '获取策略列表失败', code: 'FETCH_STRATEGIES_FAILED' },
       { status: 500 }
     )
   }
@@ -25,14 +25,14 @@ export async function POST(request: NextRequest) {
 
     if (!name) {
       return NextResponse.json(
-        { error: '策略名称不能为空' },
+        { error: '策略名称不能为空', code: 'NAME_REQUIRED' },
         { status: 400 }
       )
     }
 
     if (!rules) {
       return NextResponse.json(
-        { error: '策略规则不能为空' },
+        { error: '策略规则不能为空', code: 'RULES_REQUIRED' },
         { status: 400 }
       )
     }
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating strategy:', error)
     return NextResponse.json(
-      { error: '创建策略失败' },
+      { error: '创建策略失败', code: 'CREATE_STRATEGY_FAILED' },
       { status: 500 }
     )
   }

@@ -59,21 +59,21 @@ export async function POST(request: NextRequest) {
 
     if (!name || !symbols || !Array.isArray(symbols) || symbols.length === 0) {
       return NextResponse.json(
-        { error: '回测名称和股票代码列表不能为空' },
+        { error: '回测名称和股票代码列表不能为空', code: 'PARAMS_REQUIRED' },
         { status: 400 }
       )
     }
 
     if (!initialCapital || initialCapital <= 0) {
       return NextResponse.json(
-        { error: '初始资金必须大于0' },
+        { error: '初始资金必须大于0', code: 'INVALID_INITIAL_CASH' },
         { status: 400 }
       )
     }
 
     if (!startDate || !endDate) {
       return NextResponse.json(
-        { error: '开始日期和结束日期不能为空' },
+        { error: '开始日期和结束日期不能为空', code: 'DATES_REQUIRED' },
         { status: 400 }
       )
     }
@@ -83,14 +83,14 @@ export async function POST(request: NextRequest) {
 
     if (start >= end) {
       return NextResponse.json(
-        { error: '结束日期必须晚于开始日期' },
+        { error: '结束日期必须晚于开始日期', code: 'INVALID_DATE_RANGE' },
         { status: 400 }
       )
     }
 
     if (!strategies || strategies.length === 0) {
       return NextResponse.json(
-        { error: '策略配置不能为空' },
+        { error: '策略配置不能为空', code: 'STRATEGY_REQUIRED' },
         { status: 400 }
       )
     }
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     const totalAllocation = Object.values(allocationData).reduce((sum, w) => sum + w, 0)
     if (Math.abs(totalAllocation - 1) > 0.01) {
       return NextResponse.json(
-        { error: '资产配置权重之和必须等于1' },
+        { error: '资产配置权重之和必须等于1', code: 'INVALID_WEIGHTS' },
         { status: 400 }
       )
     }
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating portfolio backtest:', error)
     return NextResponse.json(
-      { error: '创建回测计划失败' },
+      { error: '创建回测计划失败', code: 'CREATE_BACKTEST_FAILED' },
       { status: 500 }
     )
   }
@@ -179,7 +179,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching portfolio backtests:', error)
     return NextResponse.json(
-      { error: '获取回测计划列表失败' },
+      { error: '获取回测计划列表失败', code: 'FETCH_BACKTESTS_FAILED' },
       { status: 500 }
     )
   }

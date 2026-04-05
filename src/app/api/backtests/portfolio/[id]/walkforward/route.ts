@@ -22,7 +22,7 @@ export async function POST(
 
     if (!trainPeriod || !testPeriod || !stepDays) {
       return NextResponse.json(
-        { error: '请提供训练期、测试期和步长参数' },
+        { error: '请提供训练期、测试期和步长参数', code: 'PARAMS_REQUIRED' },
         { status: 400 }
       )
     }
@@ -30,7 +30,7 @@ export async function POST(
     const plan = await prisma.portfolioBacktestPlan.findUnique({ where: { id } })
     if (!plan) {
       return NextResponse.json(
-        { error: '回测计划不存在' },
+        { error: '回测计划不存在', code: 'BACKTEST_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -103,7 +103,7 @@ export async function POST(
   } catch (error) {
     console.error('Walk-forward analysis error:', error)
     return NextResponse.json(
-      { error: '向前验证分析失败' },
+      { error: '向前验证分析失败', code: 'WALKFORWARD_ERROR' },
       { status: 500 }
     )
   }

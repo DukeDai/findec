@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { RiskMetricsCalculator, EquityPoint, RiskMetrics } from '@/lib/backtest/risk-metrics'
+import { handleApiError, Errors } from '@/lib/errors'
 
 interface BacktestComparisonRequest {
   backtestIds: string[]
@@ -341,10 +342,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { backtestIds, startDate: requestedStart, endDate: requestedEnd } = body
 
     if (!backtestIds || backtestIds.length < 2 || backtestIds.length > 8) {
-      return NextResponse.json(
-        { error: '需要选择2-8个回测记录进行对比' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('需要选择2-8个回测记录进行对比')
     }
 
     // Fetch all backtest data
@@ -354,10 +352,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     })
 
     if (backtests.length < 2) {
-      return NextResponse.json(
-        { error: '无法找到足够的回测记录' },
-        { status: 404 }
-      )
+      throw Errors.notFound('无法找到足够的回测记录')
     }
 
     // Transform backtest data
@@ -419,10 +414,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     )
 
     if (commonStart >= commonEnd) {
-      return NextResponse.json(
-        { error: '所选回测没有重叠的时间区间' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('所选回测没有重叠的时间区间')
     }
 
     // Calculate metrics for each backtest in the common period
@@ -480,10 +472,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json(response, { status: 200 })
   } catch (error) {
-    console.error('Error comparing backtests:', error)
-    return NextResponse.json(
-      { error: '对比回测时出错' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

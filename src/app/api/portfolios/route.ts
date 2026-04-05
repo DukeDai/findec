@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { handleApiError, Errors } from '@/lib/errors'
 
 export async function GET() {
   try {
@@ -13,11 +14,7 @@ export async function GET() {
     })
     return NextResponse.json(portfolios)
   } catch (error) {
-    console.error('Error fetching portfolios:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch portfolios' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -27,10 +24,7 @@ export async function POST(request: NextRequest) {
     const { name, description } = body
 
     if (!name) {
-      return NextResponse.json(
-        { error: 'Name is required' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('名称为必填项')
     }
 
     const portfolio = await prisma.portfolio.create({
@@ -45,10 +39,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(portfolio, { status: 201 })
   } catch (error) {
-    console.error('Error creating portfolio:', error)
-    return NextResponse.json(
-      { error: 'Failed to create portfolio' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

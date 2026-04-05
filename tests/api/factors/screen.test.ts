@@ -111,7 +111,7 @@ describe('Factors Screen API', () => {
       const response = await POST(request as unknown as NextRequest)
       expect(response.status).toBe(400)
       const data = await response.json()
-      expect(data.error).toBe('strategyId and symbols array are required')
+      expect(data.error).toBe('strategyId 和 symbols 数组是必填项')
     })
 
     it('should return 400 when symbols is not an array', async () => {
@@ -123,7 +123,7 @@ describe('Factors Screen API', () => {
       const response = await POST(request as unknown as NextRequest)
       expect(response.status).toBe(400)
       const data = await response.json()
-      expect(data.error).toBe('strategyId and symbols array are required')
+      expect(data.error).toBe('strategyId 和 symbols 数组是必填项')
     })
 
     it('should return 400 when symbols is missing', async () => {
@@ -135,7 +135,7 @@ describe('Factors Screen API', () => {
       const response = await POST(request as unknown as NextRequest)
       expect(response.status).toBe(400)
       const data = await response.json()
-      expect(data.error).toBe('strategyId and symbols array are required')
+      expect(data.error).toBe('strategyId 和 symbols 数组是必填项')
     })
 
     it('should return 400 for invalid scoringMethod', async () => {
@@ -151,7 +151,7 @@ describe('Factors Screen API', () => {
       const response = await POST(request as unknown as NextRequest)
       expect(response.status).toBe(400)
       const data = await response.json()
-      expect(data.error).toContain('Invalid scoringMethod')
+      expect(data.error).toContain('无效的 scoringMethod')
     })
 
     it('should return 404 when strategy not found', async () => {
@@ -169,7 +169,7 @@ describe('Factors Screen API', () => {
       const data = await response.json()
 
       expect(response.status).toBe(404)
-      expect(data.error).toBe('Strategy not found')
+      expect(data.error).toBe('策略不存在')
     })
 
     it('should accept valid scoring methods', async () => {
@@ -212,7 +212,7 @@ describe('Factors Screen API', () => {
       const data = await response.json()
 
       expect(response.status).toBe(500)
-      expect(data.error).toBe('Failed to run screening')
+      expect(data.error).toBe('内部服务器错误')
     })
   })
 })

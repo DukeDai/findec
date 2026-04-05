@@ -8,6 +8,7 @@ import {
   ScreeningRule,
   ScreeningResult,
 } from '@/lib/factors/screening-engine'
+import { handleApiError, Errors } from '@/lib/errors'
 
 const factorLibrary = new FactorLibrary()
 const screeningEngine = new ScreeningEngine(factorLibrary)
@@ -142,18 +143,12 @@ export async function POST(request: NextRequest) {
     const { strategy, symbols, scoringMethod } = body
 
     if (!strategy || !symbols || !Array.isArray(symbols) || !scoringMethod) {
-      return NextResponse.json(
-        { error: 'strategy, symbols array, and scoringMethod are required' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('strategy, symbols 数组和 scoringMethod 是必填项')
     }
 
     // Validate strategy structure
     if (!strategy.rules || strategy.rules.length === 0) {
-      return NextResponse.json(
-        { error: 'Strategy must have at least one rule' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('策略必须至少包含一个规则')
     }
 
     const strategyWithMethod: ScreeningStrategy = {
@@ -281,10 +276,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(optimizationResult)
   } catch (error) {
-    console.error('Error running factor optimization:', error)
-    return NextResponse.json(
-      { error: 'Failed to run factor optimization' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

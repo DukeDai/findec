@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { EventSignalEngine, EVENT_IMPACT_MODELS } from '@/lib/backtest/event-signal-engine'
 import type { HistoricalPrice } from '@/lib/indicators'
+import { handleApiError, Errors } from '@/lib/errors'
 
 interface BacktestConfig {
   initialCapital: number
@@ -231,11 +232,11 @@ export async function POST(request: NextRequest) {
     } = body
 
     if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
-      return NextResponse.json({ error: '股票代码列表不能为空' }, { status: 400 })
+      throw Errors.badRequest('股票代码列表不能为空')
     }
 
     if (!startDate || !endDate) {
-      return NextResponse.json({ error: '开始日期和结束日期不能为空' }, { status: 400 })
+      throw Errors.badRequest('开始日期和结束日期不能为空')
     }
 
     const eventEngine = new EventSignalEngine()
@@ -344,9 +345,6 @@ export async function POST(request: NextRequest) {
       eventImpactModels: EVENT_IMPACT_MODELS,
     })
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : '事件驱动回测失败' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

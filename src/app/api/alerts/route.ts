@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { handleApiError, Errors } from '@/lib/errors'
 
 export async function GET() {
   try {
@@ -10,11 +11,7 @@ export async function GET() {
     })
     return NextResponse.json(alerts)
   } catch (error) {
-    console.error('Error fetching alerts:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch alerts' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -24,10 +21,7 @@ export async function POST(request: NextRequest) {
     const { symbol, condition, targetValue, message } = body
 
     if (!symbol || !condition) {
-      return NextResponse.json(
-        { error: 'Symbol and condition are required' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('股票代码和条件是必填项')
     }
 
     const alert = await prisma.alert.create({
@@ -41,10 +35,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(alert, { status: 201 })
   } catch (error) {
-    console.error('Error creating alert:', error)
-    return NextResponse.json(
-      { error: 'Failed to create alert' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

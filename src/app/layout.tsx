@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Navigation, LearningModeProvider } from "@/components/layout/Navigation";
 import { AlertNotificationBridge } from "@/components/dashboard/AlertNotificationBridge";
+import { OnboardingGuard } from "@/components/learning/OnboardingGuard";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,11 +17,13 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" className="h-full antialiased">
       <body className="min-h-full flex flex-col font-sans">
-        <LearningModeProvider>
-          <Navigation />
-          <main className="flex-1">{children}</main>
-          <AlertNotificationBridge />
-        </LearningModeProvider>
+        <OnboardingGuard>
+          <LearningModeProvider>
+            <Navigation />
+            <main className="flex-1">{children}</main>
+            <AlertNotificationBridge />
+          </LearningModeProvider>
+        </OnboardingGuard>
       </body>
     </html>
   );

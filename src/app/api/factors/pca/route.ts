@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { performPCA } from '@/lib/factors/factor-pca'
 import { FactorLibrary } from '@/lib/factors/factor-library'
 import { getHistoricalData } from '@/lib/yahoo-finance'
+import { handleApiError, Errors } from '@/lib/errors'
 
 const factorLibrary = new FactorLibrary()
 
@@ -48,17 +49,11 @@ export async function POST(request: NextRequest) {
     const { factorIds, symbols } = body
 
     if (!factorIds || !Array.isArray(factorIds) || factorIds.length < 2) {
-      return NextResponse.json(
-        { error: '至少需要 2 个因子进行 PCA 分析' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('至少需要 2 个因子进行 PCA 分析')
     }
 
     if (!symbols || !Array.isArray(symbols) || symbols.length < 3) {
-      return NextResponse.json(
-        { error: '至少需要 3 只股票进行 PCA 分析' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('至少需要 3 只股票进行 PCA 分析')
     }
 
     const symbolDataMap = new Map<string, HistoricalDataPoint[]>()
@@ -87,10 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (factorHistories.size < 2) {
-      return NextResponse.json(
-        { error: '无法进行 PCA 分析：数据不足' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('无法进行 PCA 分析：数据不足')
     }
 
     const result = performPCA({ factorHistories })
@@ -119,9 +111,6 @@ export async function POST(request: NextRequest) {
       analyzedFactors: result.components,
     })
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'PCA 分析失败' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

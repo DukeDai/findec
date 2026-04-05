@@ -25,7 +25,7 @@ export async function GET(
 
     if (!portfolio) {
       return NextResponse.json(
-        { error: '组合不存在' },
+        { error: '组合不存在', code: 'PORTFOLIO_NOT_FOUND' },
         { status: 404 }
       )
     }
@@ -101,7 +101,7 @@ export async function GET(
   } catch (error) {
     console.error('Error calculating portfolio health:', error)
     return NextResponse.json(
-      { error: '计算组合健康度失败' },
+      { error: '计算组合健康度失败', code: 'HEALTH_SCORE_ERROR' },
       { status: 500 }
     )
   }

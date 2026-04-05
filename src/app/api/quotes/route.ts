@@ -7,14 +7,14 @@ export async function GET(request: NextRequest) {
 
     if (!symbol) {
       return NextResponse.json(
-        { error: "Symbol parameter is required" },
+        { error: "缺少股票代码参数", code: "MISSING_SYMBOL" },
         { status: 400 }
       );
     }
 
     if (!/^[A-Za-z0-9.\-]{1,10}$/.test(symbol)) {
       return NextResponse.json(
-        { error: "Invalid symbol format" },
+        { error: "无效的股票代码格式", code: "INVALID_SYMBOL" },
         { status: 400 }
       );
     }
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Quotes API error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch quote data" },
+      { error: "获取行情数据失败", code: "QUOTE_ERROR" },
       { status: 500 }
     );
   }

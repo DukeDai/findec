@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getHistoricalData } from '@/lib/yahoo-finance'
 import { FactorLibrary } from '@/lib/factors/factor-library'
 import { calculateFactorCorrelation } from '@/lib/factors/factor-correlation'
+import { handleApiError, Errors } from '@/lib/errors'
 
 const factorLibrary = new FactorLibrary()
 
@@ -115,11 +116,7 @@ export async function GET() {
 
     return NextResponse.json(result)
   } catch (error) {
-    console.error('Error calculating factor correlation:', error)
-    return NextResponse.json(
-      { error: '计算因子相关性失败' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -129,17 +126,11 @@ export async function POST(request: NextRequest) {
     const { factorIds, symbols } = body
 
     if (!factorIds || !Array.isArray(factorIds) || factorIds.length < 2) {
-      return NextResponse.json(
-        { error: '至少需要2个因子进行相关性分析' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('至少需要2个因子进行相关性分析')
     }
 
     if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
-      return NextResponse.json(
-        { error: '需要指定股票列表' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('需要指定股票列表')
     }
 
     // Fetch historical data for all symbols
@@ -175,10 +166,7 @@ export async function POST(request: NextRequest) {
 
     // Check if we have enough factors with data
     if (factorHistories.size < 2) {
-      return NextResponse.json(
-        { error: '无法计算因子相关性：数据不足' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('无法计算因子相关性：数据不足')
     }
 
     // Calculate correlation
@@ -200,10 +188,6 @@ export async function POST(request: NextRequest) {
       analyzedFactors: result.factors.length,
     })
   } catch (error) {
-    console.error('Error calculating factor correlation:', error)
-    return NextResponse.json(
-      { error: '计算因子相关性失败' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

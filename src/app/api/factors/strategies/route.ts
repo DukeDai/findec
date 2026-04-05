@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { handleApiError, Errors } from '@/lib/errors'
 
 export async function GET() {
   try {
@@ -13,11 +14,7 @@ export async function GET() {
     })
     return NextResponse.json(strategies)
   } catch (error) {
-    console.error('Error fetching strategies:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch strategies' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -27,10 +24,7 @@ export async function POST(request: NextRequest) {
     const { name, description, rules } = body
 
     if (!name) {
-      return NextResponse.json(
-        { error: 'Name is required' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('策略名称是必填项')
     }
 
     const strategy = await prisma.factorStrategy.create({
@@ -53,10 +47,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(strategy, { status: 201 })
   } catch (error) {
-    console.error('Error creating strategy:', error)
-    return NextResponse.json(
-      { error: 'Failed to create strategy' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

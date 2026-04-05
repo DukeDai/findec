@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { defaultDataSource } from '@/lib/data/data-source'
 import { createHash } from 'crypto'
+import { handleApiError, Errors } from '@/lib/errors'
 
 const VALID_RANGES = ['1d', '5d', '1mo', '3mo', '6mo', '1y', '2y', '5y', 'max'] as const
 
@@ -80,12 +81,7 @@ export async function GET(): Promise<NextResponse> {
 
     return NextResponse.json({ status })
   } catch (error) {
-    console.error('Data manager status error:', error)
-    const errorMessage = error instanceof Error ? error.message : '服务器内部错误'
-    return NextResponse.json(
-      { error: `获取状态失败: ${errorMessage}` },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -95,18 +91,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { symbols: rawSymbols, range } = body
 
     if (!isValidRange(range)) {
-      return NextResponse.json(
-        { error: `无效的时间范围: ${range}. 有效范围: ${VALID_RANGES.join(', ')}` },
-        { status: 400 }
-      )
+      throw Errors.badRequest(`无效的时间范围: ${range}. 有效范围: ${VALID_RANGES.join(', ')}`)
     }
 
     const symbols = normalizeSymbols(rawSymbols)
     if (symbols.length === 0) {
-      return NextResponse.json(
-        { error: '请提供至少一个股票代码' },
-        { status: 400 }
-      )
+      throw Errors.badRequest('请提供至少一个股票代码')
     }
 
     const downloaded: string[] = []
@@ -169,11 +159,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Data manager download error:', error)
-    const errorMessage = error instanceof Error ? error.message : '服务器内部错误'
-    return NextResponse.json(
-      { error: `下载失败: ${errorMessage}` },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

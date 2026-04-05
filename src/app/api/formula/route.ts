@@ -10,24 +10,24 @@ export async function POST(request: NextRequest) {
     const { symbol, formula, range = '1mo' } = body
 
     if (!symbol || !formula) {
-      return NextResponse.json({ error: 'symbol and formula are required' }, { status: 400 })
+      return NextResponse.json({ error: 'symbol and formula are required', code: 'PARAMS_REQUIRED' }, { status: 400 })
     }
 
     const validation = validateFormula(formula)
     if (!validation.valid) {
-      return NextResponse.json({ error: `Invalid formula: ${validation.error}` }, { status: 400 })
+      return NextResponse.json({ error: '公式格式无效', code: 'INVALID_FORMULA' }, { status: 400 })
     }
 
     const historyRes = await fetch(
       `http://localhost:3000/api/history?symbol=${symbol}&range=${range}`
     )
     if (!historyRes.ok) {
-      return NextResponse.json({ error: 'Failed to fetch price data' }, { status: 502 })
+      return NextResponse.json({ error: 'Failed to fetch price data', code: 'FETCH_DATA_ERROR' }, { status: 502 })
     }
     const history = await historyRes.json()
 
     if (!history.data || history.data.length === 0) {
-      return NextResponse.json({ error: 'No price data available' }, { status: 404 })
+      return NextResponse.json({ error: 'No price data available', code: 'NO_DATA_AVAILABLE' }, { status: 404 })
     }
 
     const ctx = {
@@ -52,6 +52,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     logger.error('Formula evaluation failed', error)
-    return NextResponse.json({ error: 'Formula evaluation failed' }, { status: 500 })
+    return NextResponse.json({ error: 'Formula evaluation failed', code: 'EVALUATION_ERROR' }, { status: 500 })
   }
 }
