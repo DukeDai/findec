@@ -92,6 +92,8 @@ export async function GET(request: NextRequest) {
         }
       } else if (trimmed === 'obv') {
         config.obv = true
+      } else if (trimmed === 'vwap') {
+        config.vwap = true
       } else if (indicatorRegistry.has(trimmed)) {
         customIndicators.push({ name: trimmed })
       }
@@ -119,6 +121,7 @@ export async function GET(request: NextRequest) {
       adx: result.adx,
       stoch: result.stoch,
       obv: result.obv,
+      vwap: result.vwap,
       custom: serializedCustomResults,
     }
 
