@@ -167,11 +167,7 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
   }, []);
 
   const addIndicator = useCallback((key: keyof IndicatorState, data: HistoryDataPoint[]) => {
-    if (!chartRef.current || data.length === 0) {
-      console.log('[ChartContainer] addIndicator early return:', { key, hasChart: !!chartRef.current, dataLength: data.length });
-      return;
-    }
-    console.log('[ChartContainer] addIndicator called:', key, 'data length:', data.length, 'first item volume:', data[0]?.volume);
+    if (!chartRef.current || data.length === 0) return;
 
     const closes = data.map((d) => d.close);
     const dates = data.map((d) => {
@@ -345,7 +341,6 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
         const lows = data.map((d) => d.low);
         const closes = data.map((d) => d.close);
         const volumes = data.map((d) => d.volume);
-        console.log('[ChartContainer] VWAP case:', { dataLength: data.length, volumes: volumes.slice(0, 5) });
 
         let cumulativeTPV = 0;
         let cumulativeV = 0;
@@ -356,7 +351,6 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
           cumulativeTPV += typicalPrice * volumes[i];
           cumulativeV += volumes[i];
           const vwap = cumulativeV > 0 ? cumulativeTPV / cumulativeV : typicalPrice;
-          if (i < 3) console.log('[ChartContainer] VWAP calc:', i, { typicalPrice, cumulativeTPV, cumulativeV, vwap });
           vwapData.push({ time: dates[i], value: vwap });
         }
 
@@ -394,7 +388,6 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
   }, [indicators, chartData, addIndicator, removeIndicator]);
 
   const toggleIndicator = (key: keyof IndicatorState) => {
-    console.log('[ChartContainer] toggleIndicator called:', key);
     setIndicators((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
