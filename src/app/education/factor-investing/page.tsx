@@ -10,8 +10,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  BarChart,
-  Bar,
   ScatterChart,
   Scatter,
   ZAxis,
@@ -55,9 +53,9 @@ function generateICData() {
 function generateFactorCorrelationData() {
   const factors = ['Momentum', 'Value', 'Quality', 'LowVol', 'Size']
   const correlation: number[][] = []
-  factors.forEach((f1, i) => {
+  factors.forEach((_, i) => {
     const row: number[] = []
-    factors.forEach((f2, j) => {
+    factors.forEach((_, j) => {
       if (i === j) row.push(1)
       else if (j < i) row.push(correlation[j][i])
       else {
@@ -85,7 +83,6 @@ function generatePortfoliosData() {
 
 function FactorReturnsDemo() {
   const { data, factors } = generateFactorReturnsData()
-  const colors = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6']
 
   return (
     <div className="space-y-4">
@@ -108,7 +105,7 @@ function FactorReturnsDemo() {
               key={f}
               type="monotone"
               dataKey={f}
-              stroke={colors[i]}
+              stroke={["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6"][i]}
               strokeWidth={1.5}
               dot={false}
               name={f === 'Momentum' ? '动量' : f === 'Value' ? '价值' : f === 'Quality' ? '质量' : f === 'LowVol' ? '低波动' : '规模'}
@@ -180,7 +177,6 @@ function ICAnalysisDemo() {
 
 function FactorCorrelationDemo() {
   const { factors, correlation } = generateFactorCorrelationData()
-  const colors = ['#22c55e', '#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6']
 
   const heatmapData: { factor: string; [key: string]: number | string }[] = []
   factors.forEach((f1, i) => {
@@ -206,7 +202,7 @@ function FactorCorrelationDemo() {
             <thead>
               <tr>
                 <th className="p-2 border bg-muted"></th>
-                {factors.map((f, i) => (
+                {factors.map((f) => (
                   <th key={f} className="p-2 border bg-muted font-medium">
                     {f === 'Momentum' ? '动量' : f === 'Value' ? '价值' : f === 'Quality' ? '质量' : f === 'LowVol' ? '低波' : '规模'}
                   </th>

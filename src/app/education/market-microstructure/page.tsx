@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import {
-  LineChart,
   Line,
   BarChart,
   Bar,
@@ -76,7 +75,7 @@ function generateOrderTypeData(orderSize: number, orderType: 'market' | 'limit' 
 }
 
 function OrderTypesDemo() {
-  const [orderSize, setOrderSize] = useState(100)
+  const [orderSize] = useState(100)
   const [orderType, setOrderType] = useState<'market' | 'limit' | 'stop'>('market')
   const data = generateOrderTypeData(orderSize, orderType)
 
@@ -114,15 +113,6 @@ function OrderTypesDemo() {
           <label className="text-sm font-medium">订单数量 (股)</label>
           <span className="text-lg font-bold text-primary">{orderSize}</span>
         </div>
-        <input
-          type="range"
-          min={10}
-          max={500}
-          step={10}
-          value={orderSize}
-          onChange={e => setOrderSize(Number(e.target.value))}
-          className="w-full"
-        />
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>10股 (小额)</span>
           <span>500股 (大额)</span>
@@ -169,7 +159,7 @@ function OrderTypesDemo() {
 
 // ── Liquidity & Spread Demo ───────────────────────────────────────────
 
-function generateSpreadData(volume: number) {
+function generateSpreadData() {
   const data = []
   for (let i = 0; i < 20; i++) {
     const vol = (i + 1) * 50
@@ -188,8 +178,8 @@ function generateSpreadData(volume: number) {
 }
 
 function LiquiditySpreadDemo() {
-  const [volume, setVolume] = useState(200)
-  const data = generateSpreadData(volume)
+  const volume = 200
+  const data = generateSpreadData()
 
   const currentSpread = (0.01 + 0.05 / Math.sqrt(volume / 100)).toFixed(3)
   const currentRelSpread = ((parseFloat(currentSpread) / 100) * 100).toFixed(3)
@@ -208,15 +198,6 @@ function LiquiditySpreadDemo() {
           <label className="text-sm font-medium">日均成交量 (手)</label>
           <span className="text-lg font-bold text-primary">{volume}</span>
         </div>
-        <input
-          type="range"
-          min={10}
-          max={1000}
-          step={10}
-          value={volume}
-          onChange={e => setVolume(Number(e.target.value))}
-          className="w-full"
-        />
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>低流动性</span>
           <span>高流动性</span>
@@ -246,15 +227,14 @@ function LiquiditySpreadDemo() {
       </ResponsiveContainer>
 
       <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={data}>
+        <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-          <XAxis dataKey="vol" tick={{ fontSize: 10 }} />
+          <XAxis dataKey="vol" tick={{ fontSize: 10 }} label={{ value: '成交量', fontSize: 10 }} />
           <YAxis tick={{ fontSize: 10 }} />
           <Tooltip contentStyle={{ fontSize: 12 }} />
           <Legend wrapperStyle={{ fontSize: 12 }} />
-          <Line type="monotone" dataKey="spread" stroke="#ef4444" name="低价量价差" strokeWidth={2} dot={false} />
-          <Line type="monotone" dataKey="spread2" stroke="#3b82f6" name="高价量价差" strokeWidth={2} dot={false} />
-        </LineChart>
+          <Bar dataKey="spread" fill="#ef4444" name="买卖价差" radius={[2, 2, 0, 0]} />
+        </BarChart>
       </ResponsiveContainer>
 
       <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">

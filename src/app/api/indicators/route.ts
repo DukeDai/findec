@@ -4,6 +4,7 @@ import {
   IndicatorCalculator,
   IndicatorConfig,
 } from '@/lib/indicators/calculator'
+import { indicatorRegistry, getCustomIndicatorResults } from '@/lib/indicators/registry'
 import { generateMockHistoricalData } from '@/lib/data/data-source'
 import { handleApiError, Errors } from '@/lib/errors'
 
@@ -32,6 +33,7 @@ export async function GET(request: NextRequest) {
 
     const indicatorList = indicators.split(',')
     const config: IndicatorConfig = {}
+    const customIndicators: { name: string; config?: Record<string, unknown> }[] = []
 
     for (const ind of indicatorList) {
       const trimmed = ind.trim().toLowerCase()
@@ -90,11 +92,22 @@ export async function GET(request: NextRequest) {
         }
       } else if (trimmed === 'obv') {
         config.obv = true
+      } else if (indicatorRegistry.has(trimmed)) {
+        customIndicators.push({ name: trimmed })
       }
     }
 
     const calculator = new IndicatorCalculator()
     const result = calculator.calculate(data, config)
+
+    const customResults = customIndicators.length > 0
+      ? getCustomIndicatorResults(data, customIndicators)
+      : new Map()
+
+    const serializedCustomResults: Record<string, unknown> = {}
+    customResults.forEach((values, name) => {
+      serializedCustomResults[name] = values
+    })
 
     const serializedResult = {
       ma: Object.fromEntries(result.ma),
@@ -106,6 +119,7 @@ export async function GET(request: NextRequest) {
       adx: result.adx,
       stoch: result.stoch,
       obv: result.obv,
+      custom: serializedCustomResults,
     }
 
     return NextResponse.json({

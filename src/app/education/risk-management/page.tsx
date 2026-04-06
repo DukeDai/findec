@@ -14,7 +14,6 @@ import {
   Bar,
   PieChart,
   Pie,
-  Cell,
 } from 'recharts'
 import { cn } from '@/lib/utils'
 
@@ -34,16 +33,6 @@ function generateKellyData() {
   return data
 }
 
-function generatePositionSizingData() {
-  return [
-    { name: 'Fixed Amount', sharpe: 0.8, maxDD: 25, turnover: 5 },
-    { name: 'Fixed Percent', sharpe: 1.1, maxDD: 18, turnover: 8 },
-    { name: 'Fixed Fractional', sharpe: 1.4, maxDD: 22, turnover: 12 },
-    { name: 'Kelly 50%', sharpe: 1.6, maxDD: 30, turnover: 15 },
-    { name: 'Kelly 25%', sharpe: 1.3, maxDD: 18, turnover: 10 },
-    { name: 'Volatility Target', sharpe: 1.5, maxDD: 15, turnover: 20 },
-  ]
-}
 
 function generateRiskParityData() {
   return [
@@ -166,7 +155,6 @@ function PositionSizingDemo() {
 
 function KellyFormulaDemo() {
   const data = generateKellyData()
-  const [selectedWR, setSelectedWR] = useState(50)
 
   return (
     <div className="space-y-4">
@@ -233,9 +221,7 @@ function RiskParityDemo() {
               paddingAngle={2}
               dataKey="weight"
             >
-              {data.map((_, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
+              {data.map((_, __) => null)}
             </Pie>
           </PieChart>
           <div className="mt-2 space-y-1">

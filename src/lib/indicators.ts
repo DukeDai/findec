@@ -22,6 +22,9 @@ export type {
 
 export { SignalDecorator as SignalDecoratorClass } from './indicators/signal-decorator'
 
+export { indicatorRegistry, registerIndicator, getCustomIndicatorResults } from './indicators/registry'
+export type { IndicatorPlugin } from './indicators/registry'
+
 export interface IndicatorResult {
   ma?: { values: number[]; periods: number[] }
   ema?: { values: number[]; periods: number[] }

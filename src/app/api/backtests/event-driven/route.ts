@@ -105,8 +105,8 @@ function executeBacktest(
         if (signal) {
           eventSignalLog.push({
             date: currentDate,
-            symbol: eventSignal.event.symbol,
-            type: eventSignal.event.type,
+            symbol: eventSignal.eventInfo.symbol,
+            type: eventSignal.eventInfo.type,
             reason: eventSignal.reason,
             confidence: eventSignal.confidence,
           })

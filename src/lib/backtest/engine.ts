@@ -4,12 +4,14 @@ import { CostModel, TradeCost } from './cost-model'
 import { PositionManager, PortfolioState, Trade } from './position-manager'
 import { RiskMetricsCalculator, EquityPoint, RiskMetrics } from './risk-metrics'
 import { createLogger } from '@/lib/logger'
+import type { EventType } from './event-signal-engine'
+import { EventSignalEngine } from './event-signal-engine'
 
 const logger = createLogger('backtest-engine')
 
 export interface StrategyConfig {
   symbol: string
-  type: 'ma_crossover' | 'rsi' | 'macd' | 'bollinger' | 'momentum'
+  type: 'ma_crossover' | 'rsi' | 'macd' | 'bollinger' | 'momentum' | 'event_driven'
   parameters: {
     shortWindow?: number
     longWindow?: number
@@ -23,13 +25,21 @@ export interface StrategyConfig {
     bollingerStdDev?: number
     momentumPeriod?: number
     momentumThreshold?: number
+    eventConfidenceThreshold?: number
   }
 }
 
 export interface Signal {
-  type: 'BUY' | 'SELL' | null
+  type: 'BUY' | 'SELL' | 'HOLD' | null
   reason: string
   timestamp: Date
+  source: 'technical' | 'event' | 'combined'
+  confidence?: number
+  eventInfo?: {
+    type: EventType
+    expectedMove?: number
+    description?: string
+  }
 }
 
 export interface DataSource {
@@ -61,11 +71,13 @@ export class PortfolioBacktestEngine {
   private dataSource: DataSource
   private costModel: CostModel
   private riskCalculator: RiskMetricsCalculator
+  private eventSignalEngine: EventSignalEngine
 
   constructor(dataSource: DataSource, costModel: CostModel) {
     this.dataSource = dataSource
     this.costModel = costModel
     this.riskCalculator = new RiskMetricsCalculator()
+    this.eventSignalEngine = new EventSignalEngine()
   }
 
   async run(config: BacktestConfig): Promise<BacktestResult> {
@@ -96,6 +108,12 @@ export class PortfolioBacktestEngine {
     const firstSymbol = config.symbols[0]
     const firstData = symbolData.get(firstSymbol) ?? []
 
+    const hasEventDrivenStrategy = config.strategies.some(s => s.type === 'event_driven')
+    if (hasEventDrivenStrategy) {
+      this.eventSignalEngine.addMockEarningsEvents(config.symbols, firstData)
+      this.eventSignalEngine.addMockMacroEvents(firstData)
+    }
+
     equityCurve.push({
       date: firstData[0]?.date ?? new Date(),
       value: config.initialCapital,
@@ -122,7 +140,7 @@ export class PortfolioBacktestEngine {
       for (const strategy of config.strategies) {
         const data = symbolData.get(strategy.symbol)
         if (data && i < data.length) {
-          const signal = this.generateSignal(data.slice(0, i + 1), strategy)
+          const signal = this.generateSignal(data.slice(0, i + 1), strategy, this.eventSignalEngine, currentDate)
           if (signal.type) {
             signals.push(signal)
           }
@@ -223,11 +241,33 @@ export class PortfolioBacktestEngine {
     }
   }
 
-  private generateSignal(data: HistoricalPrice[], config: StrategyConfig): Signal {
+  private generateSignal(
+    data: HistoricalPrice[],
+    config: StrategyConfig,
+    eventSignalEngine?: EventSignalEngine,
+    currentDate?: Date
+  ): Signal {
     const closes = data.map(d => d.close)
     const lastIndex = closes.length - 1
     const currentPrice = closes[lastIndex]
-    const currentDate = data[lastIndex].date
+    const currentDt = currentDate || data[lastIndex].date
+
+    // Handle event-driven strategy
+    if (config.type === 'event_driven' && eventSignalEngine && currentDate) {
+      const eventSignal = eventSignalEngine.generateEventSignals(config.symbol, currentDate, data)
+      if (eventSignal) {
+        const threshold = config.parameters.eventConfidenceThreshold ?? 0.3
+        if ((eventSignal.confidence ?? 0) >= threshold && eventSignal.type !== 'HOLD') {
+          return eventSignal
+        }
+      }
+      return {
+        type: null,
+        reason: 'No high-confidence event signal',
+        timestamp: currentDate ?? new Date(),
+        source: 'event',
+      }
+    }
 
     let signal: 'BUY' | 'SELL' | null = null
     let reason = ''
@@ -361,7 +401,8 @@ export class PortfolioBacktestEngine {
     return {
       type: signal,
       reason,
-      timestamp: currentDate,
+      timestamp: currentDt,
+      source: 'technical',
     }
   }
 

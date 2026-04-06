@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAccount, updatePositionPrices } from '@/lib/paper-trade'
-import { createLogger } from '@/lib/logger'
-
-const logger = createLogger('paper-trading-api')
+import { paperTradingEngine } from '@/lib/trading/paper-trading'
 
 export async function GET(
   _request: NextRequest,
@@ -10,14 +7,14 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const summary = await getAccount(id)
-    if (!summary) {
-      return NextResponse.json({ error: 'Account not found', code: 'ACCOUNT_NOT_FOUND' }, { status: 404 })
+    const portfolio = paperTradingEngine.getSerializablePortfolio(id)
+    if (!portfolio) {
+      return NextResponse.json({ error: '组合不存在' }, { status: 404 })
     }
-    return NextResponse.json(summary)
+    return NextResponse.json(portfolio)
   } catch (error) {
-    logger.error('Failed to get paper account', error)
-    return NextResponse.json({ error: 'Failed to fetch account', code: 'FETCH_ACCOUNT_FAILED' }, { status: 500 })
+    console.error('GET /api/paper-trading/[id] error:', error)
+    return NextResponse.json({ error: '获取组合详情失败' }, { status: 500 })
   }
 }
 
@@ -27,11 +24,13 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    const { prisma } = await import('@/lib/prisma')
-    await prisma.paperAccount.delete({ where: { id } })
+    const deleted = paperTradingEngine.deletePortfolio(id)
+    if (!deleted) {
+      return NextResponse.json({ error: '组合不存在' }, { status: 404 })
+    }
     return NextResponse.json({ success: true })
   } catch (error) {
-    logger.error('Failed to delete paper account', error)
-    return NextResponse.json({ error: 'Failed to delete account', code: 'DELETE_ACCOUNT_FAILED' }, { status: 500 })
+    console.error('DELETE /api/paper-trading/[id] error:', error)
+    return NextResponse.json({ error: '删除组合失败' }, { status: 500 })
   }
 }

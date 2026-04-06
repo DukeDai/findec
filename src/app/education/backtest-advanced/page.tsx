@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import {
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -17,24 +16,7 @@ import {
 } from 'recharts'
 import { cn } from '@/lib/utils'
 
-function generateCostModelData() {
-  const data = []
-  for (let i = 1; i <= 20; i++) {
-    const slippage = i * 0.01
-    const commission = 0.001 + (i * 0.0002)
-    const totalCost = slippage + commission
-    data.push({
-      slippageBps: Math.round(slippage * 10000),
-      commissionBps: Math.round(commission * 10000),
-      totalCostBps: Math.round(totalCost * 10000),
-      turnover: i * 5,
-    })
-  }
-  return data
-}
-
 function generateMonteCarloData() {
-  const paths = 50
   const days = 252
   const data: { day: number; [key: string]: number }[] = []
 
@@ -76,7 +58,6 @@ function generateRebalancingData() {
 
 function CostModelDemo() {
   const [tradeSize, setTradeSize] = useState(10)
-  const baseData = generateCostModelData()
   const slippageBps = tradeSize * 5
   const commissionBps = 10 + tradeSize * 2
   const totalCostBps = slippageBps + commissionBps

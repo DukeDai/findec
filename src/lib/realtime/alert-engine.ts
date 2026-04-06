@@ -14,6 +14,11 @@ export interface AlertCondition {
   operator: '>' | '<' | 'cross_above' | 'cross_below' | 'change_gt'
   threshold: number
   severity: 'info' | 'warning' | 'critical'
+  orderAction?: 'stop_loss' | 'take_profit'
+  orderType?: 'market' | 'limit'
+  quantity?: number
+  entryPrice?: number
+  limitPrice?: number
 }
 
 export interface AlertEvent {
@@ -76,10 +81,42 @@ export class AlertEngine {
         triggered.push(event)
         this.recordAlertHistory(event)
         this.broadcast(event)
+
+        if (alert.orderAction && data.prices && alert.symbol) {
+          this.executeConditionalOrder(alert, data.prices.get(alert.symbol) || 0)
+        }
       }
     }
 
     return triggered
+  }
+
+  private async executeConditionalOrder(alert: AlertCondition, currentPrice: number): Promise<void> {
+    if (!alert.orderAction || !alert.symbol || !alert.quantity || !alert.entryPrice) return
+
+    const { tradingExecutor } = await import('@/lib/trading/execution')
+
+    const order = await tradingExecutor.placeConditionalOrder({
+      symbol: alert.symbol,
+      action: alert.orderAction,
+      orderType: alert.orderType || 'market',
+      triggerPrice: alert.threshold,
+      limitPrice: alert.limitPrice,
+      quantity: alert.quantity,
+      entryPrice: alert.entryPrice,
+    })
+
+    logger.info('Conditional order placed', {
+      alertId: alert.id,
+      orderId: order.id,
+      action: alert.orderAction,
+      symbol: alert.symbol,
+    })
+
+    const results = await tradingExecutor.checkAndTrigger(alert.symbol, currentPrice)
+    for (const result of results) {
+      logger.info('Conditional order executed', { ...result })
+    }
   }
 
   private checkSingleAlert(condition: AlertCondition, data: AlertData): AlertEvent | null {

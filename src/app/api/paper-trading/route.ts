@@ -1,16 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { listAccounts, createAccount, getAccount } from '@/lib/paper-trade'
-import { createLogger } from '@/lib/logger'
-
-const logger = createLogger('paper-trading-api')
+import { paperTradingEngine } from '@/lib/trading/paper-trading'
 
 export async function GET() {
   try {
-    const accounts = await listAccounts()
-    return NextResponse.json(accounts)
+    const summaries: Array<{
+      id: string
+      name: string
+      cash: number
+      equity: number
+      positionCount: number
+      tradeCount: number
+    }> = []
+
+    for (const portfolio of paperTradingEngine.getPortfolios()) {
+      summaries.push({
+        id: portfolio.id,
+        name: portfolio.name,
+        cash: portfolio.cash,
+        equity: portfolio.equity,
+        positionCount: portfolio.positions.length,
+        tradeCount: portfolio.trades.length,
+      })
+    }
+
+    return NextResponse.json(summaries)
   } catch (error) {
-    logger.error('Failed to list paper accounts', error)
-    return NextResponse.json({ error: '获取模拟交易账户列表失败', code: 'FETCH_ACCOUNTS_FAILED' }, { status: 500 })
+    console.error('GET /api/paper-trading error:', error)
+    return NextResponse.json({ error: '获取模拟交易组合列表失败' }, { status: 500 })
   }
 }
 
@@ -19,15 +35,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, initialCash } = body
 
-    if (!name || typeof initialCash !== 'number' || initialCash <= 0) {
-      return NextResponse.json({ error: 'name and positive initialCash are required', code: 'PARAMS_REQUIRED' }, { status: 400 })
+    if (!name) {
+      return NextResponse.json({ error: '组合名称为必填项' }, { status: 400 })
     }
 
-    const account = await createAccount(name, initialCash)
-    const summary = await getAccount(account.id)
-    return NextResponse.json(summary, { status: 201 })
+    const cash = typeof initialCash === 'number' && initialCash > 0 ? initialCash : 100000
+    const id = `pt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+    const portfolio = paperTradingEngine.createPortfolio(id, name, cash)
+
+    return NextResponse.json(
+      {
+        id: portfolio.id,
+        name: portfolio.name,
+        cash: portfolio.cash,
+        equity: portfolio.equity,
+      },
+      { status: 201 }
+    )
   } catch (error) {
-    logger.error('Failed to create paper account', error)
-    return NextResponse.json({ error: '创建模拟交易账户失败', code: 'CREATE_ACCOUNT_FAILED' }, { status: 500 })
+    console.error('POST /api/paper-trading error:', error)
+    return NextResponse.json({ error: '创建模拟交易组合失败' }, { status: 500 })
   }
 }

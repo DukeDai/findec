@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Navigation, LearningModeProvider } from "@/components/layout/Navigation";
+import { Footer } from "@/components/layout/Footer";
 import { AlertNotificationBridge } from "@/components/dashboard/AlertNotificationBridge";
 import { OnboardingGuard } from "@/components/learning/OnboardingGuard";
 import "./globals.css";
@@ -21,6 +22,7 @@ export default function RootLayout({
           <LearningModeProvider>
             <Navigation />
             <main className="flex-1">{children}</main>
+            <Footer />
             <AlertNotificationBridge />
           </LearningModeProvider>
         </OnboardingGuard>

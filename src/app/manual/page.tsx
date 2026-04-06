@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { BookOpen, Search, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react'
+import { BookOpen, Search, ChevronDown, ChevronRight } from 'lucide-react'
 
 interface Section {
   id: string
@@ -431,8 +431,7 @@ export default function ManualPage() {
     .filter((section) => !searchQuery || section.children.length > 0)
 
   return (
-    <div className="flex flex-col flex-1">
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+    <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
@@ -545,15 +544,6 @@ export default function ManualPage() {
           ))}
         </div>
 
-        <div className="mt-12 pt-8 border-t text-center">
-          <p className="text-sm text-muted-foreground mb-2">
-            FinDec 美股量化分析平台 · 学习工具 · 不构成投资建议
-          </p>
-          <p className="text-xs text-muted-foreground">
-            所有回测结果仅供参考，过往业绩不代表未来表现。量化策略存在固有风险，请谨慎使用。
-          </p>
-        </div>
       </main>
-    </div>
   )
 }

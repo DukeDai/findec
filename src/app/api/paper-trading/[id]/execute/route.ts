@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { executePendingOrders, updatePositionPrices } from '@/lib/paper-trade'
-import { createLogger } from '@/lib/logger'
-
-const logger = createLogger('paper-trading-api')
+import { paperTradingEngine } from '@/lib/trading/paper-trading'
+import { tradingExecutor } from '@/lib/trading/execution'
 
 async function fetchPrice(symbol: string): Promise<number> {
-  const res = await fetch(`http://localhost:3000/api/quotes?symbol=${symbol}`)
-  if (!res.ok) throw new Error(`Failed to fetch price for ${symbol}`)
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/quotes?symbol=${symbol}`)
+  if (!res.ok) return 0
   const data = await res.json()
   return data.price || data.regularMarketPrice || 0
 }
@@ -17,18 +15,28 @@ export async function POST(
 ) {
   try {
     const { id } = await params
+    const portfolio = paperTradingEngine.getPortfolio(id)
+    if (!portfolio) {
+      return NextResponse.json({ error: '组合不存在' }, { status: 404 })
+    }
 
-    await updatePositionPrices(id, fetchPrice)
-
-    const filled = await executePendingOrders(id, fetchPrice)
+    const executed: import('@/lib/trading/execution').ExecutionResult[] = []
+    for (const position of portfolio.positions) {
+      const price = await fetchPrice(position.symbol)
+      if (price > 0) {
+        await paperTradingEngine.updatePrice(position.symbol, price)
+        const results = await tradingExecutor.checkAndTrigger(position.symbol, price)
+        executed.push(...results)
+      }
+    }
 
     return NextResponse.json({
-      executed: filled.length,
-      orders: filled,
+      executed: executed.length,
+      results: executed,
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
-    logger.error('Failed to execute paper orders', error)
-    return NextResponse.json({ error: 'Failed to execute orders', code: 'EXECUTE_ORDERS_FAILED' }, { status: 500 })
+    console.error('POST /api/paper-trading/[id]/execute error:', error)
+    return NextResponse.json({ error: '执行订单失败' }, { status: 500 })
   }
 }

@@ -153,7 +153,19 @@ export class EventSignalEngine {
     )
   }
 
-  generateEventSignals(symbol: string, currentDate: Date, historicalData: HistoricalPrice[]): EventSignal | null {
+  generateEventSignals(symbol: string, currentDate: Date, historicalData: HistoricalPrice[]): {
+    type: 'BUY' | 'SELL' | 'HOLD'
+    reason: string
+    timestamp: Date
+    source: 'event'
+    confidence: number
+    eventInfo: {
+      symbol: string
+      type: EventType
+      expectedMove: number
+      description: string | undefined
+    }
+  } | null {
     const relevantEvents = this.events.filter(e =>
       e.symbol === symbol || e.symbol === 'SPY'
     )
@@ -224,9 +236,15 @@ export class EventSignalEngine {
       return {
         type: signal,
         reason,
-        event,
+        timestamp: currentDate,
+        source: 'event',
         confidence,
-        expectedMove,
+        eventInfo: {
+          symbol: event.symbol,
+          type: event.type,
+          expectedMove,
+          description: event.description,
+        },
       }
     }
 
