@@ -2,7 +2,21 @@ import { Quote, StockSearchResult } from '@/types/stock';
 import { FundamentalData } from '@/lib/data/fundamental-data';
 import { MarketDataSource, DataPoint } from '../data-source-registry';
 
-const YAHOO_FINANCE_BASE_URL = 'https://query1.finance.yahoo.com/v8/finance';
+const YAHOO_QUERY_ENDPOINTS = [
+  'https://query2.finance.yahoo.com',
+  'https://query1.finance.yahoo.com',
+];
+
+const YAHOO_FINANCE_BASE_URL = YAHOO_QUERY_ENDPOINTS[0];
+
+const YAHOO_HEADERS = {
+  Accept: '*/*',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+  'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+  'Accept-Encoding': 'identity',
+  'Origin': 'https://finance.yahoo.com',
+  'Referer': 'https://finance.yahoo.com/',
+};
 
 interface YahooChartResponse {
   chart: {
@@ -82,7 +96,7 @@ export class YahooFinanceSource implements MarketDataSource {
     await this.rateLimiter.acquire();
 
     const url = `${YAHOO_FINANCE_BASE_URL}/chart/${normalizedSymbol}?interval=1d&range=${range}`;
-    const response = await fetch(url, { headers: { Accept: 'application/json' } });
+    const response = await fetch(url, { headers: YAHOO_HEADERS });
 
     if (!response.ok) {
       throw new YahooFinanceSourceError(`HTTP error! status: ${response.status}`);
@@ -139,7 +153,7 @@ export class YahooFinanceSource implements MarketDataSource {
     await this.rateLimiter.acquire();
 
     const url = `${YAHOO_FINANCE_BASE_URL}/chart/${normalizedSymbol}?interval=1d&range=1d`;
-    const response = await fetch(url, { headers: { Accept: 'application/json' } });
+    const response = await fetch(url, { headers: YAHOO_HEADERS });
 
     if (!response.ok) {
       throw new YahooFinanceSourceError(`HTTP error! status: ${response.status}`);
@@ -191,7 +205,7 @@ export class YahooFinanceSource implements MarketDataSource {
     await this.rateLimiter.acquire();
 
     const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&newsCount=0`;
-    const response = await fetch(url, { headers: { Accept: 'application/json' } });
+    const response = await fetch(url, { headers: YAHOO_HEADERS });
 
     if (!response.ok) {
       throw new YahooFinanceSourceError(`HTTP error! status: ${response.status}`);
@@ -214,7 +228,7 @@ export class YahooFinanceSource implements MarketDataSource {
     await this.rateLimiter.acquire();
 
     const url = `${YAHOO_FINANCE_BASE_URL}/quoteSummary/${normalizedSymbol}?modules=summaryDetail,assetProfile,price`;
-    const response = await fetch(url, { headers: { Accept: 'application/json' } });
+    const response = await fetch(url, { headers: YAHOO_HEADERS });
 
     if (!response.ok) {
       throw new YahooFinanceSourceError(`HTTP error! status: ${response.status}`);
@@ -263,7 +277,7 @@ export class YahooFinanceSource implements MarketDataSource {
     try {
       await this.rateLimiter.acquire();
       const response = await fetch(`${YAHOO_FINANCE_BASE_URL}/chart/AAPL?interval=1d&range=1d`, {
-        headers: { Accept: 'application/json' },
+        headers: YAHOO_HEADERS,
       });
       return response.ok;
     } catch {

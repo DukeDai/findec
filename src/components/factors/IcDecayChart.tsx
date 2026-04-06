@@ -1,6 +1,20 @@
 'use client'
 
+import { useMemo } from 'react'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+  Area,
+  AreaChart,
+} from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 interface IcDecayData {
   lag: number
@@ -9,152 +23,209 @@ interface IcDecayData {
 
 interface IcDecayChartProps {
   decayData: IcDecayData[]
+  factorName?: string
 }
 
-export function IcDecayChart({ decayData }: IcDecayChartProps) {
-  if (decayData.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64 text-muted-foreground">
-        暂无衰减数据
-      </div>
-    )
-  }
+export function IcDecayChart({
+  decayData,
+  factorName = '因子',
+}: IcDecayChartProps) {
+  const chartData = useMemo(() => {
+    if (!decayData || decayData.length === 0) return []
 
-  const maxIc = Math.max(...decayData.map(d => Math.abs(d.ic)), 0.1)
-  const minIc = Math.min(...decayData.map(d => d.ic), 0)
+    const maxIc = Math.max(...decayData.map(d => Math.abs(d.ic)), 0.001)
 
-  const findHalfLife = (): number | null => {
-    const baseIc = decayData[0]?.ic || 0
-    if (baseIc === 0) return null
+    return decayData.map((d) => {
+      const normalizedValue = maxIc > 0 ? Math.abs(d.ic) / maxIc : 0
+      return {
+        lag: d.lag,
+        ic: d.ic,
+        absoluteIc: Math.abs(d.ic),
+        relativeStrength: normalizedValue,
+        label: `${d.lag}日`,
+      }
+    })
+  }, [decayData])
 
-    for (let i = 1; i < decayData.length; i++) {
-      if (Math.abs(decayData[i].ic) <= Math.abs(baseIc) * 0.5) {
-        return decayData[i].lag
+  const halfLife = useMemo(() => {
+    if (chartData.length === 0) return null
+    const baseValue = chartData[0]?.relativeStrength ?? 1
+    if (baseValue === 0) return null
+
+    for (let i = 1; i < chartData.length; i++) {
+      if (chartData[i].relativeStrength <= 0.5) {
+        return chartData[i].lag
       }
     }
     return null
+  }, [chartData])
+
+  const statistics = useMemo(() => {
+    if (chartData.length === 0) return null
+
+    const ics = chartData.map(d => d.ic)
+    const avgIc = ics.reduce((a, b) => a + b, 0) / ics.length
+    const positiveDays = ics.filter(ic => ic > 0).length
+    const consistency = ics.length > 0 ? positiveDays / ics.length : 0
+
+    return {
+      avgIc,
+      consistency,
+      maxIc: Math.max(...ics.map(Math.abs)),
+      latestIc: ics[ics.length - 1],
+    }
+  }, [chartData])
+
+  if (decayData.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center h-64 text-muted-foreground">
+          暂无衰减数据
+        </CardContent>
+      </Card>
+    )
   }
 
-  const halfLife = findHalfLife()
-
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-4">
-        {decayData.map((data) => (
-          <div key={data.lag} className="text-center p-3 bg-muted rounded-lg">
-            <div className="text-xs text-muted-foreground mb-1">
-              {data.lag}日滞后期IC
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div>
+          <CardTitle className="text-lg">IC衰减分析</CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            {factorName} - 因子预测能力随时间衰减情况
+          </p>
+        </div>
+        {halfLife && (
+          <Badge variant="outline" className="text-amber-600 border-amber-300">
+            半衰期: {halfLife}天
+          </Badge>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Statistics Cards */}
+        {statistics && (
+          <div className="grid grid-cols-4 gap-4">
+            <div className="p-3 bg-muted rounded-lg">
+              <div className="text-xs text-muted-foreground mb-1">平均IC</div>
+              <div className={`text-lg font-semibold ${
+                statistics.avgIc > 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {statistics.avgIc.toFixed(3)}
+              </div>
             </div>
-            <div className={`text-lg font-semibold ${
-              data.ic > 0 ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {data.ic.toFixed(3)}
+            <div className="p-3 bg-muted rounded-lg">
+              <div className="text-xs text-muted-foreground mb-1">IC一致性</div>
+              <div className="text-lg font-semibold">
+                {(statistics.consistency * 100).toFixed(1)}%
+              </div>
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <div className="text-xs text-muted-foreground mb-1">最大IC</div>
+              <div className="text-lg font-semibold">
+                {statistics.maxIc.toFixed(3)}
+              </div>
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <div className="text-xs text-muted-foreground mb-1">最新IC</div>
+              <div className={`text-lg font-semibold ${
+                statistics.latestIc > 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {statistics.latestIc.toFixed(3)}
+              </div>
             </div>
           </div>
-        ))}
-      </div>
-
-      <div className="relative h-48 mt-4">
-        <svg className="w-full h-full" viewBox="0 0 400 200">
-          <defs>
-            <linearGradient id="decayGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-
-          <line
-            x1="40"
-            y1="170"
-            x2="380"
-            y2="170"
-            stroke="#e5e7eb"
-            strokeWidth="1"
-          />
-          <line
-            x1="40"
-            y1="170"
-            x2="40"
-            y2="20"
-            stroke="#e5e7eb"
-            strokeWidth="1"
-          />
-
-          {decayData.map((data, index) => {
-            const x = 40 + (index / (decayData.length - 1 || 1)) * 340
-            const normalizedValue = maxIc > 0 ? data.ic / maxIc : 0
-            const y = 170 - Math.abs(normalizedValue) * 150
-
-            return (
-              <g key={data.lag}>
-                <circle
-                  cx={x}
-                  cy={y}
-                  r="6"
-                  fill={data.ic > 0 ? '#22c55e' : '#ef4444'}
-                  stroke="white"
-                  strokeWidth="2"
-                />
-                <text
-                  x={x}
-                  y={190}
-                  textAnchor="middle"
-                  className="text-xs fill-muted-foreground"
-                >
-                  {data.lag}日
-                </text>
-              </g>
-            )
-          })}
-
-          {decayData.length > 1 && (
-            <polyline
-              fill="none"
-              stroke="#3b82f6"
-              strokeWidth="2"
-              points={decayData.map((data, index) => {
-                const x = 40 + (index / (decayData.length - 1)) * 340
-                const normalizedValue = maxIc > 0 ? data.ic / maxIc : 0
-                const y = 170 - Math.abs(normalizedValue) * 150
-                return `${x},${y}`
-              }).join(' ')}
-            />
-          )}
-
-          {halfLife && (
-            <g>
-              <line
-                x1="40"
-                y1="95"
-                x2="380"
-                y2="95"
-                stroke="#f59e0b"
-                strokeWidth="1"
-                strokeDasharray="4 4"
-              />
-              <text
-                x="50"
-                y="90"
-                className="text-xs fill-amber-500"
-              >
-                半衰期
-              </text>
-            </g>
-          )}
-        </svg>
-      </div>
-
-      <div className="text-sm text-muted-foreground">
-        <p>IC衰减测试：观察因子预测能力随时间推移的变化。</p>
-        {halfLife ? (
-          <p className="mt-1">
-            半衰期约为 <span className="font-medium text-amber-600">{halfLife}天</span>
-            （IC衰减至初始值50%所需时间）
-          </p>
-        ) : (
-          <p className="mt-1">在测试期间内未达到半衰期</p>
         )}
-      </div>
-    </div>
+
+        {/* IC Decay Line Chart */}
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 20, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                dataKey="lag"
+                type="number"
+                tickFormatter={(v) => `${v}日`}
+                label={{ value: '滞后天数', position: 'bottom', offset: 0 }}
+                stroke="#6b7280"
+              />
+              <YAxis
+                tickFormatter={(v) => v.toFixed(2)}
+                label={{ value: 'IC值', angle: -90, position: 'insideLeft' }}
+                stroke="#6b7280"
+              />
+              <Tooltip
+                formatter={(value) => [typeof value === 'number' ? value.toFixed(3) : value, 'IC值']}
+                labelFormatter={(label) => `${label}日滞后期`}
+                contentStyle={{ borderRadius: '8px' }}
+              />
+
+              {halfLife && (
+                <ReferenceLine
+                  x={halfLife}
+                  stroke="#f59e0b"
+                  strokeDasharray="4 4"
+                  label={{ value: '半衰期', position: 'top', fill: '#f59e0b' }}
+                />
+              )}
+
+              <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="2 2" />
+
+              <Line
+                type="monotone"
+                dataKey="ic"
+                stroke="#3b82f6"
+                strokeWidth={2}
+                dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Relative Strength Area Chart */}
+        <div className="h-48">
+          <h4 className="text-sm font-medium text-muted-foreground mb-2">
+            相对强度衰减曲线
+          </h4>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 5, right: 20, bottom: 20, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                dataKey="lag"
+                type="number"
+                tickFormatter={(v) => `${v}日`}
+                stroke="#6b7280"
+              />
+              <YAxis
+                domain={[0, 1]}
+                tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
+                stroke="#6b7280"
+              />
+              <Tooltip
+                formatter={(value) => {
+                  const numValue = typeof value === 'number' ? value : 0
+                  return [`${(numValue * 100).toFixed(1)}%`, '相对强度']
+                }}
+                labelFormatter={(label) => `${label}日滞后期`}
+              />
+              <ReferenceLine y={0.5} stroke="#f59e0b" strokeDasharray="4 4" />
+              <Area
+                type="monotone"
+                dataKey="relativeStrength"
+                stroke="#22c55e"
+                fill="#22c55e"
+                fillOpacity={0.3}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Explanation */}
+        <div className="text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg">
+          <p className="font-medium mb-1">IC衰减测试说明：</p>
+          <p>观察因子预测能力随时间推移的变化。半衰期表示IC衰减至初始值50%所需时间，半衰期越长说明因子持续性越好。</p>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
