@@ -364,31 +364,11 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
           color: INDICATOR_COLORS.vwap,
           lineWidth: 2,
           title: "VWAP",
-          priceScaleId: "vwap",
-          lastValueVisible: false,
+          priceScaleId: "right",
+          lastValueVisible: true,
         });
         series.setData(vwapData);
         indicatorSeriesRef.current.set("vwap", series);
-
-        series.applyOptions({
-          autoscaleInfoProvider: () => ({
-            priceRange: {
-              minValue: 0,
-              maxValue: 100,
-            },
-            margins: {
-              above: 0,
-              below: 0,
-            },
-          }),
-        });
-
-        chartRef.current.priceScale("vwap").applyOptions({
-          scaleMargins: {
-            top: 0.1,
-            bottom: 0.1,
-          },
-        });
         break;
       }
     }
